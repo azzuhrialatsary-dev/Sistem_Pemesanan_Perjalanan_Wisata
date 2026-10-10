@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Cari Teman Trip - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-10">
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="font-display text-2xl font-bold">Cari Teman Trip</h1>
+        <button class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-medium">
+            + Buat Rencana Trip
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for trip in trip_list %}
+        <div class="bg-white rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-accent uppercase">{{ trip.destinasi }}</span>
+                <span class="text-xs text-slate-400">{{ trip.tanggal_berangkat|date:"d M Y" }}</span>
+            </div>
+            <h3 class="font-display font-semibold text-lg mb-1">{{ trip.judul }}</h3>
+            <p class="text-sm text-slate-500 mb-3">{{ trip.deskripsi|truncatewords:20 }}</p>
+            <div class="flex items-center justify-between">
+                <span class="text-xs text-slate-500">
+                    Dibuat oleh {{ trip.user.first_name|default:trip.user.username }}
+                </span>
+                <span class="text-xs bg-secondary text-primary px-2 py-1 rounded-full">
+                    Sisa {{ trip.sisa_kuota_teman }} slot
+                </span>
+            </div>
+            {% if trip.status_pengajuan %}
+                <span class="block w-full mt-4 text-center py-2 rounded-xl text-sm font-medium
+                    {% if trip.status_pengajuan == 'approved' %} bg-emerald-50 text-emerald-600
+                    {% elif trip.status_pengajuan == 'rejected' %} bg-red-50 text-red-600
+                    {% else %} bg-slate-100 text-slate-500 {% endif %}">
+                    {% if trip.status_pengajuan == 'approved' %}Diterima
+                    {% elif trip.status_pengajuan == 'rejected' %}Ditolak
+                    {% else %}Menunggu Persetujuan{% endif %}
+                </span>
+            {% else %}
+                <form method="POST" action="{% url 'ajukan_gabung_trip' trip.id %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full mt-4 border border-primary text-primary py-2 rounded-xl text-sm font-medium hover:bg-primary hover:text-white transition">
+                        Ajukan Gabung
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+        {% empty %}
+        <p class="text-slate-400 col-span-2">Belum ada rencana trip. Jadilah yang pertama membuat!</p>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

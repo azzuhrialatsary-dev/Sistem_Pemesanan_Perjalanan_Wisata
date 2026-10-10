@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Data Peserta - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-4 py-12">
+
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <span class="text-xs text-primary font-medium uppercase">Langkah 2 dari 3</span>
+        <h1 class="font-display text-2xl font-bold mt-1">Data Peserta</h1>
+        <p class="text-slate-500 text-sm mt-1">
+            Kode Booking: {{ booking.kode_booking }} &middot; {{ booking.jumlah_peserta }} peserta
+        </p>
+    </div>
+
+    <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        {{ formset.management_form }}
+
+        {% for peserta_form in formset %}
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <h3 class="font-medium text-sm text-slate-500 mb-3">Peserta {{ forloop.counter }}</h3>
+
+            {{ peserta_form.id }}
+
+            <div class="mb-3">
+                <label class="block text-sm font-medium mb-1">Nama Lengkap</label>
+                {{ peserta_form.nama_lengkap }}
+                {% if peserta_form.nama_lengkap.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ peserta_form.nama_lengkap.errors|striptags }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">No. Identitas (KTP)</label>
+                {{ peserta_form.no_identitas }}
+                {% if peserta_form.no_identitas.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ peserta_form.no_identitas.errors|striptags }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <button type="submit"
+                class="w-full bg-accent text-white py-3 rounded-xl font-medium hover:opacity-90">
+            Lanjut ke Pembayaran
+        </button>
+    </form>
+</div>
+{% endblock %}

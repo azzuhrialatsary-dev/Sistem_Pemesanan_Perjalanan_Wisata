@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Daftar - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto px-4 py-16">
+    <div class="bg-white rounded-2xl shadow-sm p-8">
+        <h1 class="font-display text-2xl font-bold mb-6 text-center">Buat Akun</h1>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ field.errors|striptags }}</p>
+                {% endif %}
+                {% if field.help_text %}
+                    <p class="text-slate-400 text-xs mt-1">{{ field.help_text|safe }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit"
+                    class="w-full bg-primary text-white py-3 rounded-xl font-medium hover:opacity-90 mt-2">
+                Daftar
+            </button>
+        </form>
+
+        <p class="text-sm text-slate-500 text-center mt-6">
+            Sudah punya akun?
+            <a href="{% url 'login' %}" class="text-primary font-medium">Masuk di sini</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

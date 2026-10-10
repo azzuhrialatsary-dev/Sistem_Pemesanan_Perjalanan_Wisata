@@ -1,0 +1,240 @@
+"""
+customer_app/models.py
+
+Struktur model ini sengaja ditulis untuk menunjukkan penerapan
+4 Pilar OOP secara eksplisit, supaya mudah dijelaskan saat presentasi.
+
+1. ABSTRACTION  -> BaseModel (class dasar, tidak pernah dipakai langsung)
+2. INHERITANCE  -> Paket dan TripPost sama-sama mewarisi BaseModel
+3. ENCAPSULATION -> logic terkait data disimpan sebagai method di dalam class,
+                    bukan tersebar di views.py (misal kurangi_kuota())
+4. POLYMORPHISM  -> method get_ringkasan() ada di beberapa class,
+                    tapi hasilnya berbeda tergantung class-nya
+"""
+
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
+import uuid
+
+
+# =========================================================
+# 1. ABSTRACTION
+# Class dasar ini TIDAK membuat tabel sendiri di database.
+# Dia cuma jadi "cetakan" field yang dipakai berulang.
+# =========================================================
+class BaseModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True  # <- ini kunci dari abstraction di Django
+
+
+# =========================================================
+# USER & ROLE
+# =========================================================
+class User(AbstractUser):
+    ROLE_CHOICES = (
+        ('customer', 'Customer'),
+        ('admin', 'Admin'),
+    )
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='customer')
+
+    def is_admin_role(self):
+        return self.role == 'admin'
+
+
+# =========================================================
+# 2. INHERITANCE
+# Paket dan TripPost sama-sama "mewarisi" created_at & updated_at
+# dari BaseModel, tidak perlu tulis ulang field itu di masing-masing.
+# =========================================================
+class Paket(BaseModel):
+    KATEGORI_CHOICES = (
+        ('adventure', 'Adventure'),
+        ('pantai', 'Pantai'),
+        ('kuliner', 'Kuliner'),
+        ('budaya', 'Budaya'),
+    )
+
+    nama = models.CharField(max_length=100)
+    destinasi = models.CharField(max_length=100)
+    kategori = models.CharField(max_length=20, choices=KATEGORI_CHOICES)
+    harga = models.PositiveIntegerField()
+    durasi_hari = models.PositiveIntegerField()
+    deskripsi = models.TextField()
+    foto = models.ImageField(upload_to='paket/', blank=True, null=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.nama
+
+    # ---------- 3. ENCAPSULATION ----------
+    # Logic "bagaimana harga ditampilkan" disimpan di dalam class ini,
+    # bukan ditulis ulang manual tiap kali di template/views.
+    def harga_format_rupiah(self):
+        return f"Rp {self.harga:,.0f}".replace(',', '.')
+
+    # ---------- 4. POLYMORPHISM ----------
+    # Method dengan nama sama (get_ringkasan) ada juga di class TripPost
+    # di bawah, tapi isinya beda. Inilah polymorphism.
+    def get_ringkasan(self):
+        return f"{self.nama} - {self.destinasi} ({self.durasi_hari} hari)"
+
+
+class Itinerary(BaseModel):
+    paket = models.ForeignKey(Paket, on_delete=models.CASCADE, related_name='itinerary')
+    hari_ke = models.PositiveIntegerField()
+    judul_kegiatan = models.CharField(max_length=200)
+    deskripsi = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['hari_ke']
+
+    def __str__(self):
+        return f"Hari {self.hari_ke}: {self.judul_kegiatan}"
+
+
+class Jadwal(BaseModel):
+    paket = models.ForeignKey(Paket, on_delete=models.CASCADE, related_name='jadwal')
+    tanggal_berangkat = models.DateField()
+    kuota_total = models.PositiveIntegerField()
+    kuota_tersisa = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.paket.nama} - {self.tanggal_berangkat}"
+
+    # ---------- ENCAPSULATION ----------
+    # Aturan "kuota tidak boleh minus" dijaga di dalam class ini sendiri,
+    # bukan dicek manual tiap kali di views.py. Ini mencegah bug tersebar.
+    @property
+    def is_tersedia(self):
+        return self.kuota_tersisa > 0
+
+    def kurangi_kuota(self, jumlah):
+        if jumlah > self.kuota_tersisa:
+            raise ValueError("Kuota tidak mencukupi")
+        self.kuota_tersisa -= jumlah
+        self.save()
+
+    def tambah_kuota(self, jumlah):
+        self.kuota_tersisa = min(self.kuota_total, self.kuota_tersisa + jumlah)
+        self.save()
+
+
+class Booking(BaseModel):
+    STATUS_CHOICES = (
+        ('unpaid', 'Belum Bayar'),
+        ('paid', 'Lunas'),
+        ('cancelled', 'Dibatalkan'),
+        ('completed', 'Selesai'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
+    jadwal = models.ForeignKey(Jadwal, on_delete=models.CASCADE, related_name='bookings')
+    jumlah_peserta = models.PositiveIntegerField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unpaid')
+    kode_booking = models.CharField(max_length=20, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.kode_booking:
+            self.kode_booking = f"BK-{uuid.uuid4().hex[:8].upper()}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.kode_booking
+
+    # ---------- ENCAPSULATION ----------
+    # Proses "konfirmasi bayar" jadi satu method, supaya view tinggal
+    # panggil booking.konfirmasi_pembayaran(), tidak perlu tahu detailnya.
+    def konfirmasi_pembayaran(self):
+        self.status = 'paid'
+        self.save()
+        Tiket.objects.get_or_create(booking=self)
+
+    def total_harga(self):
+        return self.jadwal.paket.harga * self.jumlah_peserta
+
+
+class Peserta(models.Model):
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='peserta')
+    nama_lengkap = models.CharField(max_length=100)
+    no_identitas = models.CharField(max_length=30)
+
+    def __str__(self):
+        return self.nama_lengkap
+
+
+class Tiket(models.Model):
+    """
+    Tiket diterbitkan otomatis begitu booking lunas. Verifikasi saat
+    keberangkatan dilakukan admin secara manual lewat pencarian
+    booking.kode_booking, tanpa QR Code.
+    """
+    booking = models.OneToOneField(Booking, on_delete=models.CASCADE, related_name='tiket')
+    sudah_diverifikasi = models.BooleanField(default=False)
+    diterbitkan_pada = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Tiket {self.booking.kode_booking}"
+
+    def verifikasi(self):
+        self.sudah_diverifikasi = True
+        self.save()
+
+
+# =========================================================
+# TRIP MATCHMAKER (fitur unik)
+# =========================================================
+class TripPost(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='trip_posts')
+    judul = models.CharField(max_length=150)
+    destinasi = models.CharField(max_length=100)
+    tanggal_berangkat = models.DateField()
+    deskripsi = models.TextField()
+    kuota_teman = models.PositiveIntegerField()
+
+    def __str__(self):
+        return self.judul
+
+    # ---------- POLYMORPHISM ----------
+    # Nama method sama persis dengan milik Paket (get_ringkasan),
+    # tapi isinya berbeda karena konteksnya beda (trip buatan user, bukan paket resmi).
+    def get_ringkasan(self):
+        return f"{self.judul} ke {self.destinasi} pada {self.tanggal_berangkat}"
+
+    def sisa_kuota_teman(self):
+        jumlah_diterima = self.join_requests.filter(status='approved').count()
+        return max(0, self.kuota_teman - jumlah_diterima)
+
+
+class TripJoinRequest(BaseModel):
+    STATUS_CHOICES = (
+        ('pending', 'Menunggu'),
+        ('approved', 'Diterima'),
+        ('rejected', 'Ditolak'),
+    )
+
+    trip_post = models.ForeignKey(TripPost, on_delete=models.CASCADE, related_name='join_requests')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='join_requests')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    class Meta:
+        unique_together = ('trip_post', 'user')
+
+    def __str__(self):
+        return f"{self.user} -> {self.trip_post} ({self.status})"
+
+    # ---------- ENCAPSULATION ----------
+    def terima(self):
+        if self.trip_post.sisa_kuota_teman() <= 0:
+            raise ValueError("Kuota trip sudah penuh")
+        self.status = 'approved'
+        self.save()
+
+    def tolak(self):
+        self.status = 'rejected'
+        self.save()

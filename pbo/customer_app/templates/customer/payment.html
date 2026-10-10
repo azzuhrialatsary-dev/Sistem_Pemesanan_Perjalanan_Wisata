@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Pembayaran - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-4 py-12">
+
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <span class="text-xs text-primary font-medium uppercase">Langkah 3 dari 3</span>
+        <h1 class="font-display text-2xl font-bold mt-1">Ringkasan Pesanan</h1>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6 space-y-3 text-sm">
+        <div class="flex justify-between">
+            <span class="text-slate-500">Kode Booking</span>
+            <span class="font-medium">{{ booking.kode_booking }}</span>
+        </div>
+        <div class="flex justify-between">
+            <span class="text-slate-500">Paket</span>
+            <span class="font-medium">{{ booking.jadwal.paket.nama }}</span>
+        </div>
+        <div class="flex justify-between">
+            <span class="text-slate-500">Tanggal Berangkat</span>
+            <span class="font-medium">{{ booking.jadwal.tanggal_berangkat|date:"d M Y" }}</span>
+        </div>
+        <div class="flex justify-between">
+            <span class="text-slate-500">Jumlah Peserta</span>
+            <span class="font-medium">{{ booking.jumlah_peserta }} orang</span>
+        </div>
+        <hr class="border-slate-100">
+        <div class="flex justify-between text-base">
+            <span class="font-semibold">Total Bayar</span>
+            <span class="font-bold text-primary">Rp {{ booking.total_harga|floatformat:0 }}</span>
+        </div>
+    </div>
+
+    <div class="bg-amber-50 text-amber-700 text-xs rounded-lg px-4 py-3 mb-6">
+        Ini pembayaran simulasi untuk keperluan tugas kuliah, klik tombol di bawah
+        untuk langsung menandai pesanan sebagai lunas.
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit"
+                class="w-full bg-accent text-white py-3 rounded-xl font-medium hover:opacity-90">
+            Konfirmasi Pembayaran
+        </button>
+    </form>
+</div>
+{% endblock %}

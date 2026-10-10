@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}E-Tiket - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto px-4 py-12">
+
+    <div class="bg-white rounded-2xl shadow-lift overflow-hidden">
+        <div class="bg-gradient-to-br from-ocean to-primary text-white p-6 text-center">
+            <p class="text-xs uppercase tracking-wide text-slate-200">E-Tiket</p>
+            <h1 class="font-display text-xl font-bold mt-1">{{ booking.jadwal.paket.nama }}</h1>
+            <p class="text-sm text-slate-200 mt-1">{{ booking.jadwal.tanggal_berangkat|date:"d M Y" }}</p>
+        </div>
+
+        <div class="p-6 text-center border-b border-dashed border-slate-200">
+            <p class="text-xs text-slate-400 mb-1">Kode Booking</p>
+            <p class="font-mono text-2xl font-bold tracking-widest text-primary">
+                {{ booking.kode_booking }}
+            </p>
+            <p class="text-xs text-slate-400 mt-2">
+                Tunjukkan kode ini kepada admin saat keberangkatan
+            </p>
+        </div>
+
+        <div class="p-6 space-y-2 text-sm">
+            <div class="flex justify-between">
+                <span class="text-slate-500">Jumlah Peserta</span>
+                <span class="font-medium">{{ booking.jumlah_peserta }} orang</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Status</span>
+                <span class="font-medium text-primary">{{ booking.get_status_display }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Total Dibayar</span>
+                <span class="font-medium">Rp {{ booking.total_harga|floatformat:0 }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Status Check-in</span>
+                <span class="font-medium">
+                    {% if tiket.sudah_diverifikasi %}
+                        <span class="text-emerald-600">Sudah Check-in</span>
+                    {% else %}
+                        <span class="text-amber-600">Belum Check-in</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <a href="{% url 'riwayat_booking' %}" class="block text-center text-sm text-primary mt-6">
+        Lihat Riwayat Pemesanan
+    </a>
+</div>
+{% endblock %}

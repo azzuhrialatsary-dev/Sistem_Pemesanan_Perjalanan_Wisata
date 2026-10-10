@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ paket.nama }} - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-10">
+
+    <div class="h-64 bg-slate-200 rounded-2xl flex items-center justify-center text-slate-400 mb-6">
+        {% if paket.foto %}
+            <img src="{{ paket.foto.url }}" class="w-full h-full object-cover rounded-2xl">
+        {% else %}
+            Foto Paket
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <div class="lg:col-span-2">
+            <span class="text-xs font-medium text-primary uppercase">{{ paket.get_kategori_display }}</span>
+            <h1 class="font-display text-3xl font-bold mt-1 mb-2">{{ paket.nama }}</h1>
+            <p class="text-slate-500 mb-6">{{ paket.destinasi }} &middot; {{ paket.durasi_hari }} hari</p>
+
+            <p class="text-slate-600 leading-relaxed mb-8">{{ paket.deskripsi }}</p>
+
+            <h2 class="font-display font-semibold text-xl mb-4">Itinerary Perjalanan</h2>
+            <div class="space-y-4">
+                {% for item in itinerary_list %}
+                <div class="bg-white rounded-xl p-4 shadow-sm flex gap-4">
+                    <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">
+                        {{ item.hari_ke }}
+                    </div>
+                    <div>
+                        <h3 class="font-medium">{{ item.judul_kegiatan }}</h3>
+                        <p class="text-sm text-slate-500">{{ item.deskripsi }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-slate-400 text-sm">Itinerary belum diatur admin.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-lift h-fit sticky top-20">
+            <p class="text-sm text-slate-500">Mulai dari</p>
+            <p class="text-primary font-bold text-2xl mb-4">{{ paket.harga_format_rupiah }}</p>
+
+            <h3 class="font-medium text-sm mb-2">Pilih Jadwal Keberangkatan</h3>
+            <div class="space-y-2">
+                {% for jadwal in jadwal_list %}
+                <div class="flex items-center justify-between border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                    <div>
+                        <p>{{ jadwal.tanggal_berangkat|date:"d M Y" }}</p>
+                        {% if jadwal.is_tersedia %}
+                            <span class="text-emerald-600 text-xs">Sisa {{ jadwal.kuota_tersisa }}</span>
+                        {% else %}
+                            <span class="text-red-500 text-xs">Penuh</span>
+                        {% endif %}
+                    </div>
+
+                    {% if jadwal.is_tersedia %}
+                        <a href="{% url 'buat_booking' jadwal.id %}"
+                           class="bg-accent text-white text-xs px-4 py-2 rounded-lg font-medium hover:opacity-90">
+                            Pilih
+                        </a>
+                    {% else %}
+                        <span class="text-xs text-slate-300">Tidak tersedia</span>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-slate-400 text-xs">Belum ada jadwal keberangkatan.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

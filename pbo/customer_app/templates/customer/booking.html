@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Booking - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-4 py-12">
+
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <span class="text-xs text-primary font-medium uppercase">Langkah 1 dari 3</span>
+        <h1 class="font-display text-2xl font-bold mt-1">Isi Jumlah Peserta</h1>
+        <p class="text-slate-500 text-sm mt-1">
+            {{ jadwal.paket.nama }} &middot; Keberangkatan {{ jadwal.tanggal_berangkat|date:"d M Y" }}
+        </p>
+        <p class="text-slate-500 text-sm">Sisa kuota: {{ jadwal.kuota_tersisa }}</p>
+    </div>
+
+    <form method="POST" class="bg-white rounded-2xl shadow-sm p-6">
+        {% csrf_token %}
+        <label class="block text-sm font-medium mb-1">{{ form.jumlah_peserta.label }}</label>
+        {{ form.jumlah_peserta }}
+        {% if form.jumlah_peserta.errors %}
+            <p class="text-red-500 text-xs mt-1">{{ form.jumlah_peserta.errors|striptags }}</p>
+        {% endif %}
+
+        <button type="submit"
+                class="w-full bg-accent text-white py-3 rounded-xl font-medium hover:opacity-90 mt-6">
+            Lanjutkan
+        </button>
+    </form>
+</div>
+{% endblock %}

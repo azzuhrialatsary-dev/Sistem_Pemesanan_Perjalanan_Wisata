@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Masuk - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto px-4 py-16">
+    <div class="bg-white rounded-2xl shadow-sm p-8">
+        <h1 class="font-display text-2xl font-bold mb-6 text-center">Masuk</h1>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Username</label>
+                <input type="text" name="username" required
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2">
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-1">Password</label>
+                <input type="password" name="password" required
+                       class="w-full border border-slate-200 rounded-lg px-3 py-2">
+            </div>
+            <button type="submit"
+                    class="w-full bg-primary text-white py-3 rounded-xl font-medium hover:opacity-90">
+                Masuk
+            </button>
+        </form>
+
+        <p class="text-sm text-slate-500 text-center mt-6">
+            Belum punya akun?
+            <a href="{% url 'register' %}" class="text-primary font-medium">Daftar di sini</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

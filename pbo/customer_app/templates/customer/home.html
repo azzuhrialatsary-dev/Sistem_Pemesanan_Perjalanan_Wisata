@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Beranda - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+
+{% block content %}
+
+<section class="bg-gradient-to-br from-ocean to-primary text-white">
+    <div class="max-w-6xl mx-auto px-4 py-20 text-center">
+        <h1 class="font-display text-3xl md:text-5xl font-bold mb-4">
+            Jelajahi Indonesia, Tanpa Ribet
+        </h1>
+        <p class="text-slate-100 max-w-xl mx-auto mb-8">
+            Pilih paket wisata siap jadi, lengkap dengan transportasi, penginapan, dan itinerary.
+        </p>
+
+        <form action="{% url 'daftar_paket' %}" class="bg-white rounded-2xl p-3 flex flex-col md:flex-row gap-2 max-w-xl mx-auto shadow-lift">
+            <input type="text" name="destinasi" placeholder="Mau ke mana?"
+                   class="flex-1 px-4 py-2 rounded-xl text-slate-800 outline-none">
+            <button type="submit" class="bg-accent text-white px-6 py-2 rounded-xl font-medium hover:opacity-90">
+                Cari Paket
+            </button>
+        </form>
+    </div>
+</section>
+
+<section class="max-w-6xl mx-auto px-4 py-14">
+    <h2 class="font-display text-2xl font-bold mb-6">Paket Wisata Unggulan</h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for paket in paket_unggulan %}
+        <a href="{% url 'detail_paket' paket.id %}"
+           class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lift transition">
+            <div class="h-40 bg-slate-200 flex items-center justify-center text-slate-400">
+                {% if paket.foto %}
+                    <img src="{{ paket.foto.url }}" class="w-full h-full object-cover">
+                {% else %}
+                    Foto Paket
+                {% endif %}
+            </div>
+            <div class="p-4">
+                <span class="text-xs font-medium text-primary uppercase">{{ paket.get_kategori_display }}</span>
+                <h3 class="font-display font-semibold text-lg mt-1">{{ paket.nama }}</h3>
+                <p class="text-sm text-slate-500">{{ paket.destinasi }} &middot; {{ paket.durasi_hari }} hari</p>
+                <p class="text-primary font-bold mt-2">{{ paket.harga_format_rupiah }}</p>
+            </div>
+        </a>
+        {% empty %}
+        <p class="text-slate-400 col-span-3">Belum ada paket wisata. Tambahkan lewat Django Admin.</p>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}

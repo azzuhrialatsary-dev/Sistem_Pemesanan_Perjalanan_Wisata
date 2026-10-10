@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistem Pemesanan Perjalanan Wisata{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#2E8B8B',     /* teal, mirip warna utama Lovable */
+                        accent: '#E8863A',      /* oranye, warna aksen */
+                        ocean: '#1E3A5F',       /* biru tua untuk footer/header gelap */
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-sans bg-slate-50 text-slate-800">
+
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="{% url 'home' %}" class="font-display font-bold text-base md:text-lg text-primary leading-tight max-w-[220px] md:max-w-none">
+                Sistem Pemesanan Perjalanan Wisata
+            </a>
+            <div class="hidden md:flex items-center gap-6 text-sm font-medium">
+                <a href="{% url 'daftar_paket' %}" class="hover:text-primary">Paket Wisata</a>
+                <a href="{% url 'daftar_trip_matchmaker' %}" class="hover:text-primary">Cari Teman Trip</a>
+                {% if user.is_authenticated %}
+                <a href="{% url 'riwayat_booking' %}" class="hover:text-primary">Riwayat Pesanan</a>
+                {% endif %}
+            </div>
+
+            {% if user.is_authenticated %}
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-slate-500 hidden sm:inline">Hai, {{ user.username }}</span>
+                    <a href="{% url 'logout' %}"
+                       class="border border-primary text-primary px-4 py-2 rounded-full text-sm font-medium hover:bg-primary hover:text-white transition">
+                        Keluar
+                    </a>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}"
+                   class="bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:opacity-90">
+                    Masuk
+                </a>
+            {% endif %}
+        </div>
+    </nav>
+
+    {% if messages %}
+    <div class="max-w-6xl mx-auto px-4 pt-4">
+        {% for message in messages %}
+        <div class="rounded-lg px-4 py-3 text-sm mb-2
+            {% if message.tags == 'error' %} bg-red-50 text-red-600
+            {% elif message.tags == 'success' %} bg-emerald-50 text-emerald-600
+            {% else %} bg-blue-50 text-blue-600 {% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-ocean text-white mt-16">
+        <div class="max-w-6xl mx-auto px-4 py-10 text-sm text-slate-300">
+            Sistem Pemesanan Perjalanan Wisata (Tugas Kelompok)
+        </div>
+    </footer>
+
+</body>
+</html>
