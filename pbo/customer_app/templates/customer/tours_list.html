@@ -1,50 +1,129 @@
 {% extends "base.html" %}
-{% block title %}Paket Wisata - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+{% block title %}Paket Wisata - TravelHub{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-10">
 
-    <h1 class="font-display text-2xl font-bold mb-6">Semua Paket Wisata</h1>
-
-    <form class="flex flex-wrap gap-3 mb-8 bg-white p-4 rounded-2xl shadow-sm">
-        <input type="text" name="destinasi" value="{{ destinasi_dicari }}" placeholder="Cari destinasi..."
-               class="border border-slate-200 rounded-lg px-3 py-2 text-sm flex-1 min-w-[180px]">
-
-        <select name="kategori" class="border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            <option value="">Semua Kategori</option>
-            <option value="adventure" {% if kategori_dipilih == 'adventure' %}selected{% endif %}>Adventure</option>
-            <option value="pantai" {% if kategori_dipilih == 'pantai' %}selected{% endif %}>Pantai</option>
-            <option value="kuliner" {% if kategori_dipilih == 'kuliner' %}selected{% endif %}>Kuliner</option>
-            <option value="budaya" {% if kategori_dipilih == 'budaya' %}selected{% endif %}>Budaya</option>
-        </select>
-
-        <button type="submit" class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-medium">
-            Filter
-        </button>
-    </form>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for paket in paket_list %}
-        <a href="{% url 'detail_paket' paket.id %}"
-           class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lift transition">
-            <div class="h-40 bg-slate-200 flex items-center justify-center text-slate-400">
-                {% if paket.foto %}
-                    <img src="{{ paket.foto.url }}" class="w-full h-full object-cover">
-                {% else %}
-                    Foto Paket
-                {% endif %}
-            </div>
-            <div class="p-4">
-                <span class="text-xs font-medium text-primary uppercase">{{ paket.get_kategori_display }}</span>
-                <h3 class="font-display font-semibold text-lg mt-1">{{ paket.nama }}</h3>
-                <p class="text-sm text-slate-500">{{ paket.destinasi }} &middot; {{ paket.durasi_hari }} hari</p>
-                <p class="text-primary font-bold mt-2">{{ paket.harga_format_rupiah }}</p>
-            </div>
-        </a>
-        {% empty %}
-        <p class="text-slate-400 col-span-3">Tidak ada paket yang cocok dengan pencarian.</p>
-        {% endfor %}
+{# ===== Header ===== #}
+<section class="bg-gradient-to-r from-ocean to-primary text-white">
+    <div class="max-w-6xl mx-auto px-4 py-12">
+        <h1 class="font-display font-bold text-4xl">Paket Wisata</h1>
+        <p class="mt-1 text-sm text-white/90">{{ total }} paket tersedia</p>
     </div>
+</section>
 
-</div>
+<form method="get" id="filter-form"
+      class="max-w-6xl mx-auto px-4 py-10 grid lg:grid-cols-[260px_1fr] gap-8 items-start">
+
+    {# ===== Sidebar filter ===== #}
+    <aside class="bg-white rounded-3xl shadow-soft p-5 space-y-5 text-sm lg:sticky lg:top-24">
+
+        <div>
+            <label class="block font-semibold mb-2">Destinasi</label>
+            <select name="destinasi" onchange="this.form.submit()"
+                    class="w-full border border-slate-200 rounded-full px-4 py-2 bg-white outline-none focus:border-primary">
+                <option value="">Semua</option>
+                {% for d in destinasi_list %}
+                <option value="{{ d }}" {% if d == destinasi_dicari %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-2">Tanggal keberangkatan</label>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="date" name="tanggal_dari" value="{{ tanggal_dari }}" onchange="this.form.submit()"
+                       class="min-w-0 border border-slate-200 rounded-full px-3 py-1.5 text-xs outline-none focus:border-primary">
+                <input type="date" name="tanggal_sampai" value="{{ tanggal_sampai }}" onchange="this.form.submit()"
+                       class="min-w-0 border border-slate-200 rounded-full px-3 py-1.5 text-xs outline-none focus:border-primary">
+            </div>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-2">
+                Durasi maks: <span id="durasi-label">{{ durasi_maks }}</span> hari
+            </label>
+            <input type="range" name="durasi_maks" min="1" max="{{ durasi_max_db }}" step="1" value="{{ durasi_maks }}"
+                   class="w-full accent-primary"
+                   oninput="document.getElementById('durasi-label').textContent = this.value"
+                   onchange="this.form.submit()">
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-2">
+                Harga maks: Rp <span id="harga-label">{{ harga_maks_label }}</span>
+            </label>
+            <input type="range" name="harga_maks" min="0" max="{{ harga_max_db }}" step="100000" value="{{ harga_maks }}"
+                   class="w-full accent-primary"
+                   oninput="document.getElementById('harga-label').textContent = Number(this.value).toLocaleString('id-ID')"
+                   onchange="this.form.submit()">
+        </div>
+
+        <div>
+            <p class="font-semibold mb-2">Kategori</p>
+            <div class="space-y-2">
+                {% for kode, label in kategori_pilihan %}
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="kategori" value="{{ kode }}"
+                           {% if kode in kategori_dipilih %}checked{% endif %}
+                           onchange="this.form.submit()"
+                           class="w-4 h-4 rounded border-slate-300 accent-primary">
+                    {{ label }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <a href="{% url 'daftar_paket' %}" class="block text-center text-primary font-medium hover:underline">
+            Reset filter
+        </a>
+    </aside>
+
+    {# ===== Daftar paket ===== #}
+    <div>
+        <div class="flex justify-end mb-5">
+            <select name="urut" onchange="this.form.submit()"
+                    class="border border-slate-200 rounded-full px-4 py-1.5 text-sm bg-white outline-none focus:border-primary">
+                <option value="populer" {% if urut == 'populer' %}selected{% endif %}>Terpopuler</option>
+                <option value="termurah" {% if urut == 'termurah' %}selected{% endif %}>Harga terendah</option>
+                <option value="termahal" {% if urut == 'termahal' %}selected{% endif %}>Harga tertinggi</option>
+                <option value="durasi" {% if urut == 'durasi' %}selected{% endif %}>Durasi terpendek</option>
+            </select>
+        </div>
+
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            {% for paket in page_obj %}
+                {% include "customer/_paket_card.html" %}
+            {% empty %}
+                <p class="text-slate-400 col-span-full py-10 text-center">
+                    Tidak ada paket yang cocok dengan filter ini.
+                </p>
+            {% endfor %}
+        </div>
+
+        {# ===== Nomor halaman ===== #}
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="flex items-center justify-center gap-2 mt-10 text-sm font-medium">
+            {% if page_obj.has_previous %}
+            <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}"
+               class="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center hover:text-primary">&lsaquo;</a>
+            {% endif %}
+
+            {% for n in page_obj.paginator.page_range %}
+                {% if n == page_obj.number %}
+                <span class="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center">{{ n }}</span>
+                {% else %}
+                <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ n }}"
+                   class="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center hover:text-primary">{{ n }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}"
+               class="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center hover:text-primary">&rsaquo;</a>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </div>
+</form>
+
 {% endblock %}
