@@ -40,6 +40,7 @@ class User(AbstractUser):
         ('admin', 'Admin'),
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='customer')
+    no_hp = models.CharField(max_length=20, blank=True)
 
     def is_admin_role(self):
         return self.role == 'admin'
