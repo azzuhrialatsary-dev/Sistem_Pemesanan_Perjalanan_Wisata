@@ -12,7 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
 from django.core.paginator import Paginator
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils.dateparse import parse_date
 
 from .models import User, Paket, Jadwal, Booking, TripPost, TripJoinRequest
@@ -301,10 +301,35 @@ def lihat_tiket(request, booking_id):
     })
 
 
+TAB_RIWAYAT = ('aktif', 'selesai', 'dibatalkan')
+
+
 @login_required
 def riwayat_booking(request):
-    booking_list = Booking.objects.filter(user=request.user).order_by('-dipesan_pada')
+    tab = request.GET.get('tab', 'aktif')
+    if tab not in TAB_RIWAYAT:
+        tab = 'aktif'
+
+    hari_ini = timezone.localdate()
+    semua = (Booking.objects
+            .filter(user=request.user)
+            .select_related('jadwal', 'jadwal__paket'))
+
+    if tab == 'aktif':
+        # belum dibayar, atau sudah lunas tapi belum berangkat
+        booking_list = semua.filter(
+            Q(status='unpaid') | Q(status='paid', jadwal__tanggal_berangkat__gte=hari_ini)
+        ).order_by('jadwal__tanggal_berangkat')
+    elif tab == 'selesai':
+        # ditandai selesai, atau sudah lunas dan tanggal berangkatnya sudah lewat
+        booking_list = semua.filter(
+            Q(status='completed') | Q(status='paid', jadwal__tanggal_berangkat__lt=hari_ini)
+        ).order_by('-jadwal__tanggal_berangkat')
+    else:
+        booking_list = semua.filter(status='cancelled').order_by('-jadwal__tanggal_berangkat')
+
     return render(request, 'customer/riwayat.html', {
+        'tab': tab,
         'booking_list': booking_list,
     })
 
