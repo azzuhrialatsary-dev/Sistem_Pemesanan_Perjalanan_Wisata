@@ -1,0 +1,29 @@
+<a href="{% url 'detail_paket' paket.id %}"
+   class="group bg-white rounded-3xl overflow-hidden shadow-soft hover:shadow-lift hover:-translate-y-1 transition duration-300 block">
+    <div class="relative aspect-[4/3] bg-gradient-to-br from-ocean to-primary overflow-hidden">
+        {% if paket.foto %}
+            <img src="{{ paket.foto.url }}" alt="{{ paket.nama }}"
+                 class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+        {% endif %}
+        <span class="absolute top-3 left-3 bg-white/95 text-primary text-xs font-semibold px-3 py-1 rounded-full">
+            {{ paket.get_kategori_display }}
+        </span>
+        <span class="absolute top-3 right-3 bg-white/95 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
+            <i data-lucide="star" class="w-3.5 h-3.5 text-accent fill-accent"></i>{{ paket.rating }}
+        </span>
+    </div>
+    <div class="p-5">
+        <h3 class="font-display font-semibold text-lg text-ocean">{{ paket.nama }}</h3>
+        <div class="flex items-center gap-4 text-sm text-slate-500 mt-1.5">
+            <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>{{ paket.destinasi }}</span>
+            <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i>{{ paket.durasi_hari }} hari</span>
+        </div>
+        <div class="flex items-end justify-between mt-5">
+            <div>
+                <p class="text-xs text-slate-500">Mulai dari</p>
+                <p class="font-display font-bold text-xl text-accent">{{ paket.harga_format_rupiah }}</p>
+            </div>
+            <p class="text-sm text-slate-500">Sisa {{ paket.sisa_kursi }} kursi</p>
+        </div>
+    </div>
+</a>

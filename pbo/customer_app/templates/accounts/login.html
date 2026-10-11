@@ -1,33 +1,72 @@
 {% extends "base.html" %}
-{% block title %}Masuk - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+{% load static %}
+{% block title %}Masuk - TravelHub{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block messages %}{% endblock %}
+{% block footer %}{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto px-4 py-16">
-    <div class="bg-white rounded-2xl shadow-sm p-8">
-        <h1 class="font-display text-2xl font-bold mb-6 text-center">Masuk</h1>
+<div class="min-h-screen grid md:grid-cols-2 bg-surface">
 
-        <form method="POST">
-            {% csrf_token %}
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">Username</label>
-                <input type="text" name="username" required
-                       class="w-full border border-slate-200 rounded-lg px-3 py-2">
-            </div>
-            <div class="mb-6">
-                <label class="block text-sm font-medium mb-1">Password</label>
-                <input type="password" name="password" required
-                       class="w-full border border-slate-200 rounded-lg px-3 py-2">
-            </div>
-            <button type="submit"
-                    class="w-full bg-primary text-white py-3 rounded-xl font-medium hover:opacity-90">
-                Masuk
-            </button>
-        </form>
+    {# ===== Kiri: foto + teks ===== #}
+    <div class="relative hidden md:block bg-gradient-to-br from-ocean to-primary overflow-hidden">
+        <img src="{% static 'customer/img/komodo.jpg' %}" alt="" onerror="this.remove()"
+            class="absolute inset-0 w-full h-full object-cover">
+        <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ocean/90 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 p-12 text-white">
+            <h2 class="font-display font-bold text-4xl leading-snug mb-2">Jelajahi 17.000 pulau, satu akun.</h2>
+            <p class="text-white/90">Pesan paket wisata dan temukan teman trip sefrekuensi.</p>
+        </div>
+    </div>
 
-        <p class="text-sm text-slate-500 text-center mt-6">
-            Belum punya akun?
-            <a href="{% url 'register' %}" class="text-primary font-medium">Daftar di sini</a>
-        </p>
+    {# ===== Kanan: form ===== #}
+    <div class="flex items-center justify-center px-6 py-12">
+        <div class="w-full max-w-md">
+            <a href="{% url 'home' %}" class="inline-flex items-center gap-2.5 mb-10">
+                <span class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
+                    <i data-lucide="compass" class="w-5 h-5"></i>
+                </span>
+                <span class="font-display font-bold text-xl text-ocean">TravelHub</span>
+            </a>
+
+            <h1 class="font-display font-bold text-3xl text-ocean mb-1">Masuk ke akun</h1>
+            <p class="text-slate-500 mb-8">Senang melihatmu lagi!</p>
+
+            {% if messages %}
+                {% for message in messages %}
+                <div class="rounded-xl px-4 py-3 text-sm mb-4
+                    {% if message.tags == 'error' %}bg-red-50 text-red-600
+                    {% elif message.tags == 'success' %}bg-emerald-50 text-emerald-600
+                    {% else %}bg-blue-50 text-blue-600{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-5">
+                    <label class="block text-sm font-medium mb-1.5">Email</label>
+                    <input type="text" name="username" required autofocus
+                        class="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-1.5">Password</label>
+                    <input type="password" name="password" required
+                        class="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                </div>
+                <button type="submit"
+                        class="w-full bg-accent text-white py-3 rounded-full font-medium shadow-soft hover:opacity-90">
+                    Masuk
+                </button>
+            </form>
+
+            <p class="text-sm text-slate-500 text-center mt-8">
+                Belum punya akun?
+                <a href="{% url 'register' %}" class="text-primary font-semibold">Daftar</a>
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}

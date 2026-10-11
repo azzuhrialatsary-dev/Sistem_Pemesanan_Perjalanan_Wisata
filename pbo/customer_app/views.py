@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Count
 
-from .models import Paket, Jadwal, Booking, TripPost, TripJoinRequest
+from .models import User, Paket, Jadwal, Booking, TripPost, TripJoinRequest
 from .forms import RegisterForm, BookingForm, get_peserta_formset
 
 
@@ -11,10 +12,30 @@ from .forms import RegisterForm, BookingForm, get_peserta_formset
 # HALAMAN UMUM (TIDAK BUTUH LOGIN)
 # =========================================================
 
+KATEGORI_BERANDA = [
+    ('pantai', 'Pantai', 'waves'),
+    ('gunung', 'Gunung', 'mountain'),
+    ('budaya', 'Budaya', 'landmark'),
+    ('kuliner', 'Kuliner', 'utensils-crossed'),
+]
+
+
 def home(request):
-    paket_unggulan = Paket.objects.all()[:6]
+    paket_populer = Paket.objects.order_by('-rating', '-created_at')[:6]
+
+    jumlah = dict(
+        Paket.objects.order_by().values_list('kategori').annotate(n=Count('id'))
+    )
+    kategori_list = [
+        {'kode': kode, 'label': label, 'ikon': ikon, 'jumlah': jumlah.get(kode, 0)}
+        for kode, label, ikon in KATEGORI_BERANDA
+    ]
+
     return render(request, 'customer/home.html', {
-        'paket_unggulan': paket_unggulan,
+        'paket_populer': paket_populer,
+        'kategori_list': kategori_list,
+        'total_paket': Paket.objects.count(),
+        'banner_paket': Paket.objects.exclude(foto='').exclude(foto__isnull=True)[:2],
     })
 
 
@@ -68,8 +89,17 @@ def register_view(request):
 
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        identitas = request.POST.get('username', '').strip()
         password = request.POST.get('password')
+
+        # boleh login pakai email ATAU username
+        username = identitas
+        if '@' in identitas:
+            pengguna = User.objects.filter(email__iexact=identitas).first()
+            if pengguna:
+                username = pengguna.username
+
+        user = authenticate(request, username=username, password=password)
         user = authenticate(request, username=username, password=password)
 
         if user is not None:

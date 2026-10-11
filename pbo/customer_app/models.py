@@ -52,10 +52,10 @@ class User(AbstractUser):
 # =========================================================
 class Paket(BaseModel):
     KATEGORI_CHOICES = (
-        ('adventure', 'Adventure'),
         ('pantai', 'Pantai'),
-        ('kuliner', 'Kuliner'),
+        ('gunung', 'Gunung'),
         ('budaya', 'Budaya'),
+        ('kuliner', 'Kuliner'),
     )
 
     nama = models.CharField(max_length=100)
@@ -65,6 +65,7 @@ class Paket(BaseModel):
     durasi_hari = models.PositiveIntegerField()
     deskripsi = models.TextField()
     foto = models.ImageField(upload_to='paket/', blank=True, null=True)
+    rating = models.DecimalField(max_digits=2, decimal_places=1, default=4.5)
 
     class Meta:
         ordering = ['-created_at']
@@ -77,6 +78,12 @@ class Paket(BaseModel):
     # bukan ditulis ulang manual tiap kali di template/views.
     def harga_format_rupiah(self):
         return f"Rp {self.harga:,.0f}".replace(',', '.')
+
+    def sisa_kursi(self):
+        total = self.jadwal.filter(
+            tanggal_berangkat__gte=timezone.localdate()
+        ).aggregate(total=models.Sum('kuota_tersisa'))['total']
+        return total or 0
 
     # ---------- 4. POLYMORPHISM ----------
     # Method dengan nama sama (get_ringkasan) ada juga di class TripPost
