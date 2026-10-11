@@ -1,8 +1,8 @@
+from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import inlineformset_factory
-from .models import User, Booking, Peserta
-
+from .models import User, Booking, Peserta, TripPost
 
 class RegisterForm(UserCreationForm):
     """
@@ -28,7 +28,7 @@ class RegisterForm(UserCreationForm):
         for field in self.fields.values():
             field.widget.attrs.update({
                 'class': 'w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 '
-                         'shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20'
+                        'shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20'
             })
 
     def clean_email(self):
@@ -56,6 +56,54 @@ class RegisterForm(UserCreationForm):
             user.save()
         return user
 
+GAYA_INPUT = ('w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-sm '
+            'outline-none focus:border-primary focus:ring-2 focus:ring-primary/20')
+
+
+class TripPostForm(forms.ModelForm):
+    class Meta:
+        model = TripPost
+        fields = ['judul', 'destinasi', 'budget', 'tanggal_berangkat', 'tanggal_selesai',
+                'kuota_teman', 'tags', 'deskripsi', 'foto']
+        labels = {
+            'judul': 'Judul trip',
+            'destinasi': 'Destinasi',
+            'budget': 'Budget per orang',
+            'tanggal_berangkat': 'Tanggal mulai',
+            'tanggal_selesai': 'Tanggal selesai',
+            'kuota_teman': 'Jumlah slot',
+            'tags': 'Gaya trip / tags',
+            'deskripsi': 'Deskripsi',
+            'foto': 'Foto',
+        }
+        widgets = {
+            'judul': forms.TextInput(attrs={'placeholder': 'cth. Backpacker Labuan Bajo'}),
+            'destinasi': forms.TextInput(attrs={'placeholder': 'Labuan Bajo, NTT'}),
+            'budget': forms.NumberInput(attrs={'placeholder': '3500000', 'min': 0}),
+            'tanggal_berangkat': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'tanggal_selesai': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'kuota_teman': forms.NumberInput(attrs={'placeholder': '3', 'min': 1}),
+            'tags': forms.TextInput(attrs={'placeholder': 'Backpacker, Laut, Foto'}),
+            'deskripsi': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Ceritakan rencana perjalananmu...'}),
+            'foto': forms.FileInput(attrs={'accept': 'image/*'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tanggal_selesai'].required = True
+        for field in self.fields.values():
+            field.widget.attrs['class'] = GAYA_INPUT
+
+    def clean(self):
+        data = super().clean()
+        mulai, selesai = data.get('tanggal_berangkat'), data.get('tanggal_selesai')
+        if mulai and mulai < timezone.localdate():
+            self.add_error('tanggal_berangkat', "Tanggal mulai tidak boleh sudah lewat.")
+        if mulai and selesai and selesai < mulai:
+            self.add_error('tanggal_selesai', "Tanggal selesai harus sama atau setelah tanggal mulai.")
+        if data.get('kuota_teman') is not None and data['kuota_teman'] < 1:
+            self.add_error('kuota_teman', "Minimal 1 slot.")
+        return data
 
 class BookingForm(forms.Form):
     jumlah_peserta = forms.IntegerField(

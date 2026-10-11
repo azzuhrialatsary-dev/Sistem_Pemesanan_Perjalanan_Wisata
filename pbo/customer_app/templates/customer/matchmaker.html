@@ -1,56 +1,385 @@
 {% extends "base.html" %}
-{% block title %}Cari Teman Trip - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+{% block title %}Trip Matchmaker - TravelHub{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-10">
 
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="font-display text-2xl font-bold">Cari Teman Trip</h1>
-        <button class="bg-primary text-white px-5 py-2 rounded-lg text-sm font-medium">
-            + Buat Rencana Trip
-        </button>
+{# ===== Header ===== #}
+<section class="bg-gradient-to-r from-ocean to-primary text-white">
+    <div class="max-w-6xl mx-auto px-4 py-12">
+        <h1 class="font-display font-bold text-4xl">Trip Matchmaker</h1>
+        <p class="mt-1 text-sm text-white/90">Swipe, match, dan berangkat bareng.</p>
+    </div>
+</section>
+
+<div class="max-w-4xl mx-auto px-4 py-10">
+
+    {# ===== Tab ===== #}
+    {% url 'daftar_trip_matchmaker' as trip_url %}
+    <div class="inline-flex bg-slate-100 rounded-full p-1 text-sm font-medium mb-8">
+        <a href="{{ trip_url }}?tab=jelajah"
+           class="px-4 py-1.5 rounded-full {% if tab == 'jelajah' %}bg-white shadow-soft text-ocean{% else %}text-slate-500 hover:text-primary{% endif %}">Jelajah</a>
+        <a href="{{ trip_url }}?tab=posting"
+           class="px-4 py-1.5 rounded-full {% if tab == 'posting' %}bg-white shadow-soft text-ocean{% else %}text-slate-500 hover:text-primary{% endif %}">Posting Trip</a>
+        <a href="{{ trip_url }}?tab=permintaan"
+           class="px-4 py-1.5 rounded-full {% if tab == 'permintaan' %}bg-white shadow-soft text-ocean{% else %}text-slate-500 hover:text-primary{% endif %}">Permintaan Saya</a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {% for trip in trip_list %}
-        <div class="bg-white rounded-2xl p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-medium text-accent uppercase">{{ trip.destinasi }}</span>
-                <span class="text-xs text-slate-400">{{ trip.tanggal_berangkat|date:"d M Y" }}</span>
-            </div>
-            <h3 class="font-display font-semibold text-lg mb-1">{{ trip.judul }}</h3>
-            <p class="text-sm text-slate-500 mb-3">{{ trip.deskripsi|truncatewords:20 }}</p>
-            <div class="flex items-center justify-between">
-                <span class="text-xs text-slate-500">
-                    Dibuat oleh {{ trip.user.first_name|default:trip.user.username }}
-                </span>
-                <span class="text-xs bg-secondary text-primary px-2 py-1 rounded-full">
-                    Sisa {{ trip.sisa_kuota_teman }} slot
-                </span>
-            </div>
-            {% if trip.status_pengajuan %}
-                <span class="block w-full mt-4 text-center py-2 rounded-xl text-sm font-medium
-                    {% if trip.status_pengajuan == 'approved' %} bg-emerald-50 text-emerald-600
-                    {% elif trip.status_pengajuan == 'rejected' %} bg-red-50 text-red-600
-                    {% else %} bg-slate-100 text-slate-500 {% endif %}">
-                    {% if trip.status_pengajuan == 'approved' %}Diterima
-                    {% elif trip.status_pengajuan == 'rejected' %}Ditolak
-                    {% else %}Menunggu Persetujuan{% endif %}
-                </span>
-            {% else %}
-                <form method="POST" action="{% url 'ajukan_gabung_trip' trip.id %}">
-                    {% csrf_token %}
-                    <button type="submit"
-                        class="w-full mt-4 border border-primary text-primary py-2 rounded-xl text-sm font-medium hover:bg-primary hover:text-white transition">
-                        Ajukan Gabung
-                    </button>
-                </form>
-            {% endif %}
+
+{# ============================================================ #}
+{# TAB 1: JELAJAH (swipe)                                       #}
+{# ============================================================ #}
+{% if tab == 'jelajah' %}
+
+    <div class="flex flex-col items-center">
+
+        <div id="trip-stack" class="relative w-full max-w-[340px] aspect-[3/4] {% if not trip_list %}hidden{% endif %}">
+            {% for trip in trip_list %}
+            <article class="trip-card absolute inset-0 rounded-3xl overflow-hidden shadow-lift select-none cursor-grab bg-gradient-to-br from-ocean to-primary"
+                     style="touch-action: pan-y;"
+                     data-url="{% url 'swipe_trip' trip.id %}">
+                {% if trip.foto %}
+                <img src="{{ trip.foto.url }}" alt="" draggable="false"
+                     class="absolute inset-0 w-full h-full object-cover pointer-events-none">
+                {% endif %}
+                <div class="absolute inset-0 bg-gradient-to-t from-ocean/95 via-ocean/30 to-transparent pointer-events-none"></div>
+
+                <span class="cap-gabung pointer-events-none absolute top-6 left-5 -rotate-12 border-4 border-emerald-400 text-emerald-300 font-extrabold text-xl px-3 py-1 rounded-xl"
+                      style="opacity:0">GABUNG</span>
+                <span class="cap-lewati pointer-events-none absolute top-6 right-5 rotate-12 border-4 border-red-400 text-red-300 font-extrabold text-xl px-3 py-1 rounded-xl"
+                      style="opacity:0">LEWATI</span>
+
+                <div class="absolute bottom-0 inset-x-0 p-5 text-white pointer-events-none">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-sm font-bold">
+                            {{ trip.user.first_name|default:trip.user.username|first|upper }}
+                        </span>
+                        <span class="text-sm font-medium">{{ trip.label_pembuat }}</span>
+                    </div>
+                    <h3 class="font-display font-bold text-2xl leading-snug mb-3">{{ trip.judul }}</h3>
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm font-medium">
+                        <span class="flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4"></i>{{ trip.destinasi }}</span>
+                        <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-4 h-4"></i>{{ trip.rentang_tanggal }}</span>
+                        <span class="flex items-center gap-1.5"><i data-lucide="wallet" class="w-4 h-4"></i>{{ trip.budget_format_rupiah }}</span>
+                        <span class="flex items-center gap-1.5"><i data-lucide="users" class="w-4 h-4"></i>{{ trip.sisa_kuota_teman }} slot</span>
+                    </div>
+                    {% if trip.daftar_tags %}
+                    <div class="flex flex-wrap gap-1.5 mt-3">
+                        {% for tag in trip.daftar_tags %}
+                        <span class="bg-white/20 backdrop-blur text-xs px-2.5 py-0.5 rounded-full">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
         </div>
-        {% empty %}
-        <p class="text-slate-400 col-span-2">Belum ada rencana trip. Jadilah yang pertama membuat!</p>
-        {% endfor %}
+
+        {# tombol X dan hati #}
+        <div id="tombol-swipe" class="flex items-center gap-5 mt-8 {% if not trip_list %}hidden{% endif %}">
+            <button type="button" onclick="window.swipeTrip('kiri')" aria-label="Lewati"
+                    class="w-14 h-14 rounded-full bg-white shadow-lift text-red-500 flex items-center justify-center hover:scale-105 transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <button type="button" onclick="window.swipeTrip('kanan')" aria-label="Gabung"
+                    class="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-orange-500 shadow-lift text-white flex items-center justify-center hover:scale-105 transition">
+                <i data-lucide="heart" class="w-6 h-6 fill-white"></i>
+            </button>
+        </div>
+
+        {# tampil kalau kartu habis #}
+        <div id="trip-kosong" class="{% if trip_list %}hidden{% endif %} text-center py-16 max-w-sm">
+            <span class="w-14 h-14 rounded-full bg-secondary text-primary inline-flex items-center justify-center mb-4">
+                <i data-lucide="compass" class="w-7 h-7"></i>
+            </span>
+            <p class="font-display font-semibold text-xl text-ocean mb-1">Belum ada trip lagi</p>
+            <p class="text-slate-500 text-sm mb-5">Kamu sudah melihat semua rencana trip yang ada. Buat rencanamu sendiri dan temukan partner perjalanan.</p>
+            <a href="{{ trip_url }}?tab=posting"
+               class="inline-block bg-accent text-white px-6 py-2.5 rounded-full text-sm font-medium hover:opacity-90">
+                Posting Trip
+            </a>
+        </div>
     </div>
 
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full text-sm font-medium shadow-lift bg-ocean text-white opacity-0 pointer-events-none transition-opacity duration-300 z-50"></div>
+
+    <script>
+    (function () {
+        var stack = document.getElementById('trip-stack');
+        var kosong = document.getElementById('trip-kosong');
+        var tombol = document.getElementById('tombol-swipe');
+        var toast = document.getElementById('toast');
+        var CSRF = '{{ csrf_token }}';
+        var sibuk = false, geser = false, mulaiX = 0, mulaiY = 0, timerToast = null;
+
+        function kartu() { return Array.prototype.slice.call(stack.querySelectorAll('.trip-card')); }
+
+        function tampilkanToast(teks, sukses) {
+            toast.textContent = teks;
+            toast.className = toast.className.replace(/bg-\S+/g, '') + (sukses === false ? ' bg-red-600' : ' bg-ocean');
+            toast.style.opacity = 1;
+            clearTimeout(timerToast);
+            timerToast = setTimeout(function () { toast.style.opacity = 0; }, 2600);
+        }
+
+        // atur tumpukan: kartu paling atas penuh, di belakangnya sedikit mengecil
+        function susun() {
+            var daftar = kartu();
+            daftar.forEach(function (el, i) {
+                el.style.zIndex = 10 - i;
+                el.style.transition = 'transform .25s ease, opacity .25s ease';
+                if (i === 0) {
+                    el.style.transform = 'none';
+                    el.style.opacity = 1;
+                } else if (i < 3) {
+                    el.style.transform = 'translateY(' + (i * 12) + 'px) scale(' + (1 - i * 0.05) + ')';
+                    el.style.opacity = 1;
+                } else {
+                    el.style.transform = 'scale(.85)';
+                    el.style.opacity = 0;
+                }
+                el.style.pointerEvents = i === 0 ? 'auto' : 'none';
+            });
+            var ada = daftar.length > 0;
+            stack.classList.toggle('hidden', !ada);
+            tombol.classList.toggle('hidden', !ada);
+            kosong.classList.toggle('hidden', ada);
+        }
+
+        function kirim(el, arah) {
+            var data = new FormData();
+            data.append('arah', arah);
+            fetch(el.dataset.url, { method: 'POST', headers: { 'X-CSRFToken': CSRF }, body: data })
+                .then(function (res) { return res.json().then(function (json) { return { status: res.status, json: json }; }); })
+                .then(function (hasil) {
+                    if (hasil.status === 401 && hasil.json.login) {
+                        tampilkanToast('Masuk dulu untuk bergabung...');
+                        setTimeout(function () { window.location.href = hasil.json.login; }, 700);
+                        return;
+                    }
+                    if (arah === 'kanan' && hasil.json.pesan) { tampilkanToast(hasil.json.pesan, hasil.json.ok); }
+                })
+                .catch(function () { tampilkanToast('Gagal terhubung ke server.', false); });
+        }
+
+        // animasi kartu terbang keluar, lalu panggil server
+        window.swipeTrip = function (arah) {
+            if (sibuk) { return; }
+            var el = kartu()[0];
+            if (!el) { return; }
+            sibuk = true;
+            var jarak = (arah === 'kanan' ? 1 : -1) * window.innerWidth;
+            el.style.transition = 'transform .35s ease, opacity .35s ease';
+            el.style.transform = 'translate(' + jarak + 'px, -40px) rotate(' + (arah === 'kanan' ? 25 : -25) + 'deg)';
+            el.style.opacity = 0;
+            kirim(el, arah);
+            setTimeout(function () { el.remove(); sibuk = false; susun(); }, 300);
+        };
+
+        function resetCap(el) {
+            el.querySelector('.cap-gabung').style.opacity = 0;
+            el.querySelector('.cap-lewati').style.opacity = 0;
+        }
+
+        // ----- geser dengan mouse / jari -----
+        stack.addEventListener('pointerdown', function (e) {
+            var el = kartu()[0];
+            if (!el || sibuk || !el.contains(e.target)) { return; }
+            geser = true;
+            mulaiX = e.clientX;
+            mulaiY = e.clientY;
+            el.setPointerCapture(e.pointerId);
+            el.style.transition = 'none';
+        });
+
+        stack.addEventListener('pointermove', function (e) {
+            if (!geser) { return; }
+            var el = kartu()[0];
+            if (!el) { return; }
+            var dx = e.clientX - mulaiX, dy = e.clientY - mulaiY;
+            el.style.transform = 'translate(' + dx + 'px, ' + (dy * 0.3) + 'px) rotate(' + (dx / 18) + 'deg)';
+            var kuat = Math.min(Math.abs(dx) / 100, 1);
+            el.querySelector('.cap-gabung').style.opacity = dx > 0 ? kuat : 0;
+            el.querySelector('.cap-lewati').style.opacity = dx < 0 ? kuat : 0;
+        });
+
+        function lepas(e) {
+            if (!geser) { return; }
+            geser = false;
+            var el = kartu()[0];
+            if (!el) { return; }
+            var dx = e.clientX - mulaiX;
+            if (Math.abs(dx) > 110) {
+                window.swipeTrip(dx > 0 ? 'kanan' : 'kiri');
+            } else {
+                el.style.transition = 'transform .25s ease';
+                el.style.transform = 'none';
+                resetCap(el);
+            }
+        }
+        stack.addEventListener('pointerup', lepas);
+        stack.addEventListener('pointercancel', lepas);
+
+        // panah kiri / kanan di keyboard
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowLeft') { window.swipeTrip('kiri'); }
+            if (e.key === 'ArrowRight') { window.swipeTrip('kanan'); }
+        });
+
+        susun();
+    })();
+    </script>
+
+
+{# ============================================================ #}
+{# TAB 2: POSTING TRIP                                          #}
+{# ============================================================ #}
+{% elif tab == 'posting' %}
+
+    <form method="post" enctype="multipart/form-data" action="{{ trip_url }}?tab=posting"
+          class="bg-white rounded-3xl shadow-lift p-6 max-w-xl space-y-4 text-sm">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="rounded-xl px-4 py-3 bg-red-50 text-red-600">{{ form.non_field_errors|striptags }}</div>
+        {% endif %}
+
+        <div>
+            <label class="block font-medium mb-1.5">{{ form.judul.label }}</label>
+            {{ form.judul }}
+            {% if form.judul.errors %}<p class="text-red-500 text-xs mt-1">{{ form.judul.errors|striptags }}</p>{% endif %}
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block font-medium mb-1.5">{{ form.destinasi.label }}</label>
+                {{ form.destinasi }}
+                {% if form.destinasi.errors %}<p class="text-red-500 text-xs mt-1">{{ form.destinasi.errors|striptags }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="block font-medium mb-1.5">{{ form.budget.label }}</label>
+                {{ form.budget }}
+                {% if form.budget.errors %}<p class="text-red-500 text-xs mt-1">{{ form.budget.errors|striptags }}</p>{% endif %}
+            </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block font-medium mb-1.5">{{ form.tanggal_berangkat.label }}</label>
+                {{ form.tanggal_berangkat }}
+                {% if form.tanggal_berangkat.errors %}<p class="text-red-500 text-xs mt-1">{{ form.tanggal_berangkat.errors|striptags }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="block font-medium mb-1.5">{{ form.tanggal_selesai.label }}</label>
+                {{ form.tanggal_selesai }}
+                {% if form.tanggal_selesai.errors %}<p class="text-red-500 text-xs mt-1">{{ form.tanggal_selesai.errors|striptags }}</p>{% endif %}
+            </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block font-medium mb-1.5">{{ form.kuota_teman.label }}</label>
+                {{ form.kuota_teman }}
+                {% if form.kuota_teman.errors %}<p class="text-red-500 text-xs mt-1">{{ form.kuota_teman.errors|striptags }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="block font-medium mb-1.5">{{ form.tags.label }}</label>
+                {{ form.tags }}
+                {% if form.tags.errors %}<p class="text-red-500 text-xs mt-1">{{ form.tags.errors|striptags }}</p>{% endif %}
+            </div>
+        </div>
+
+        <div>
+            <label class="block font-medium mb-1.5">{{ form.deskripsi.label }}</label>
+            {{ form.deskripsi }}
+            {% if form.deskripsi.errors %}<p class="text-red-500 text-xs mt-1">{{ form.deskripsi.errors|striptags }}</p>{% endif %}
+        </div>
+
+        <div>
+            <label class="block font-medium mb-1.5">{{ form.foto.label }}</label>
+            {{ form.foto }}
+            {% if form.foto.errors %}<p class="text-red-500 text-xs mt-1">{{ form.foto.errors|striptags }}</p>{% endif %}
+        </div>
+
+        <button type="submit"
+                class="w-full bg-accent text-white py-3 rounded-full font-medium shadow-soft hover:opacity-90">
+            Posting Trip
+        </button>
+    </form>
+
+
+{# ============================================================ #}
+{# TAB 3: PERMINTAAN SAYA                                       #}
+{# ============================================================ #}
+{% else %}
+
+    <div class="grid md:grid-cols-2 gap-8">
+
+        {# ----- Permintaan masuk ----- #}
+        <div>
+            <h2 class="font-display font-semibold text-ocean mb-4">Permintaan Masuk</h2>
+            <div class="space-y-4">
+                {% for req in masuk %}
+                <div class="bg-white rounded-2xl shadow-soft p-4">
+                    <div class="flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-full bg-secondary text-primary flex items-center justify-center text-sm font-bold">
+                            {{ req.user.first_name|default:req.user.username|first|upper }}
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-sm">{{ req.user.first_name|default:req.user.username }}</p>
+                            <p class="text-xs text-slate-500 truncate">ingin gabung "{{ req.trip_post.judul }}"</p>
+                        </div>
+                        {% if req.status == 'approved' %}
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">diterima</span>
+                        {% elif req.status == 'rejected' %}
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-600">ditolak</span>
+                        {% else %}
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">pending</span>
+                        {% endif %}
+                    </div>
+                    {% if req.status == 'pending' %}
+                    <div class="grid grid-cols-2 gap-2 mt-3">
+                        <form method="post" action="{% url 'terima_permintaan_trip' req.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full bg-emerald-600 text-white text-xs font-semibold py-2 rounded-full hover:opacity-90">Terima</button>
+                        </form>
+                        <form method="post" action="{% url 'tolak_permintaan_trip' req.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full bg-white border border-slate-300 text-xs font-semibold py-2 rounded-full hover:bg-slate-50">Tolak</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-sm text-slate-400">Belum ada yang mengajukan gabung ke tripmu.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# ----- Permintaan keluar ----- #}
+        <div>
+            <h2 class="font-display font-semibold text-ocean mb-4">Permintaan Keluar</h2>
+            <div class="space-y-4">
+                {% for req in keluar %}
+                <div class="bg-white rounded-2xl shadow-soft p-4 flex items-center gap-3">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-sm truncate">{{ req.trip_post.judul }}</p>
+                        <p class="text-xs text-slate-500">oleh {{ req.trip_post.user.first_name|default:req.trip_post.user.username }}</p>
+                    </div>
+                    {% if req.status == 'approved' %}
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">diterima</span>
+                    {% elif req.status == 'rejected' %}
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-600">ditolak</span>
+                    {% else %}
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">pending</span>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-sm text-slate-400">Kamu belum mengajukan gabung ke trip mana pun. Mulai swipe di tab Jelajah!</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+{% endif %}
 </div>
 {% endblock %}

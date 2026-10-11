@@ -22,4 +22,9 @@ urlpatterns = [
     # Trip Matchmaker
     path('trip-matchmaker/', views.daftar_trip_matchmaker, name='daftar_trip_matchmaker'),
     path('trip-matchmaker/<int:trip_id>/gabung/', views.ajukan_gabung_trip, name='ajukan_gabung_trip'),
+        path('trip-matchmaker/<int:trip_id>/swipe/', views.swipe_trip, name='swipe_trip'),
+    path('trip-matchmaker/permintaan/<int:req_id>/terima/', views.respon_permintaan_trip,
+        {'aksi': 'terima'}, name='terima_permintaan_trip'),
+    path('trip-matchmaker/permintaan/<int:req_id>/tolak/', views.respon_permintaan_trip,
+        {'aksi': 'tolak'}, name='tolak_permintaan_trip'),
 ]
