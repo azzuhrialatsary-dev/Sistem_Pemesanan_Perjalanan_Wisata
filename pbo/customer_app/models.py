@@ -151,8 +151,18 @@ class Booking(BaseModel):
 
     def save(self, *args, **kwargs):
         if not self.kode_booking:
-            self.kode_booking = f"BK-{uuid.uuid4().hex[:8].upper()}"
+            self.kode_booking = self._buat_kode()
         super().save(*args, **kwargs)
+
+    def _buat_kode(self):
+        # contoh hasil: TH-2611-0042 (tahun+bulan keberangkatan, lalu nomor urut)
+        tgl = self.jadwal.tanggal_berangkat
+        nomor = (Booking.objects.aggregate(m=models.Max('id'))['m'] or 0) + 1
+        while True:
+            kode = f"TH-{tgl:%y%m}-{nomor:04d}"
+            if not Booking.objects.filter(kode_booking=kode).exists():
+                return kode
+            nomor += 1
 
     def __str__(self):
         return self.kode_booking
@@ -167,6 +177,9 @@ class Booking(BaseModel):
 
     def total_harga(self):
         return self.jadwal.paket.harga * self.jumlah_peserta
+
+    def total_harga_rupiah(self):
+        return f"Rp {self.total_harga():,.0f}".replace(',', '.')
 
 
 class Peserta(models.Model):
