@@ -41,6 +41,8 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='customer')
     no_hp = models.CharField(max_length=20, blank=True)
+    umur = models.PositiveSmallIntegerField(null=True, blank=True)
+    kota = models.CharField(max_length=80, blank=True)
 
     def is_admin_role(self):
         return self.role == 'admin'
@@ -171,6 +173,8 @@ class Peserta(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='peserta')
     nama_lengkap = models.CharField(max_length=100)
     no_identitas = models.CharField(max_length=30)
+    umur = models.PositiveSmallIntegerField(null=True, blank=True)
+    kota = models.CharField(max_length=80, blank=True)
 
     def __str__(self):
         return self.nama_lengkap
@@ -197,13 +201,21 @@ class Tiket(models.Model):
 # =========================================================
 # TRIP MATCHMAKER (fitur unik)
 # =========================================================
+BULAN_SINGKAT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+                'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+
+
 class TripPost(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='trip_posts')
     judul = models.CharField(max_length=150)
     destinasi = models.CharField(max_length=100)
-    tanggal_berangkat = models.DateField()
+    tanggal_berangkat = models.DateField()           # "Tanggal mulai"
+    tanggal_selesai = models.DateField(null=True, blank=True)
+    budget = models.PositiveIntegerField(default=0)  # budget per orang
+    tags = models.CharField(max_length=150, blank=True)  # contoh: "Backpacker, Laut, Foto"
+    foto = models.ImageField(upload_to='trip/', blank=True, null=True)
     deskripsi = models.TextField()
-    kuota_teman = models.PositiveIntegerField()
+    kuota_teman = models.PositiveIntegerField()      # "Jumlah slot"
 
     def __str__(self):
         return self.judul
@@ -213,6 +225,35 @@ class TripPost(BaseModel):
     # tapi isinya berbeda karena konteksnya beda (trip buatan user, bukan paket resmi).
     def get_ringkasan(self):
         return f"{self.judul} ke {self.destinasi} pada {self.tanggal_berangkat}"
+
+    # ---------- helper tampilan kartu ----------
+    def label_pembuat(self):
+        # contoh hasil: "Dinda, 26 · Jakarta" (umur dan kota hanya tampil kalau diisi)
+        u = self.user
+        teks = u.first_name or u.username
+        if u.umur:
+            teks += f", {u.umur}"
+        if u.kota:
+            teks += f" · {u.kota}"
+        return teks
+
+    def rentang_tanggal(self):
+        # contoh hasil: "5–9 Des 2026" atau "28 Nov – 2 Des 2026"
+        a, b = self.tanggal_berangkat, self.tanggal_selesai
+        bln_a, bln_b = BULAN_SINGKAT[a.month - 1], (BULAN_SINGKAT[b.month - 1] if b else '')
+        if not b or b == a:
+            return f"{a.day} {bln_a} {a.year}"
+        if (a.year, a.month) == (b.year, b.month):
+            return f"{a.day}–{b.day} {bln_b} {b.year}"
+        if a.year == b.year:
+            return f"{a.day} {bln_a} – {b.day} {bln_b} {b.year}"
+        return f"{a.day} {bln_a} {a.year} – {b.day} {bln_b} {b.year}"
+
+    def budget_format_rupiah(self):
+        return f"Rp {self.budget:,.0f}".replace(',', '.')
+
+    def daftar_tags(self):
+        return [t.strip() for t in self.tags.split(',') if t.strip()]
 
     def sisa_kuota_teman(self):
         jumlah_diterima = self.join_requests.filter(status='approved').count()

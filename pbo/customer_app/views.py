@@ -1,5 +1,11 @@
 import math
 
+from django.contrib.auth.views import redirect_to_login
+from django.http import JsonResponse
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -10,8 +16,7 @@ from django.db.models import Count, Max
 from django.utils.dateparse import parse_date
 
 from .models import User, Paket, Jadwal, Booking, TripPost, TripJoinRequest
-from .forms import RegisterForm, BookingForm, get_peserta_formset
-
+from .forms import RegisterForm, BookingForm, TripPostForm, get_peserta_formset
 
 # =========================================================
 # HALAMAN UMUM (TIDAK BUTUH LOGIN)
@@ -308,44 +313,128 @@ def riwayat_booking(request):
 # TRIP MATCHMAKER
 # =========================================================
 
-def daftar_trip_matchmaker(request):
-    trip_list = list(TripPost.objects.all())
+TAB_TRIP = ('jelajah', 'posting', 'permintaan')
 
+
+def _url_tab(tab):
+    return f"{reverse('daftar_trip_matchmaker')}?tab={tab}"
+
+
+def _trip_untuk_dijelajahi(request):
+    """Trip yang muncul sebagai kartu swipe: belum lewat, masih ada slot,
+    bukan milik sendiri, belum pernah diajukan, dan belum di-swipe kiri."""
+    dilewati = request.session.get('trip_dilewati', [])
+    qs = (TripPost.objects
+        .filter(tanggal_berangkat__gte=timezone.localdate())
+        .exclude(id__in=dilewati)
+        .select_related('user'))
     if request.user.is_authenticated:
-        status_map = {
-            req.trip_post_id: req.status
-            for req in TripJoinRequest.objects.filter(user=request.user)
-        }
-        for trip in trip_list:
-            # ditempel sebagai atribut biasa, bukan disimpan ke database,
-            # supaya template bisa pakai trip.status_pengajuan langsung
-            trip.status_pengajuan = status_map.get(trip.id)
-    else:
-        for trip in trip_list:
-            trip.status_pengajuan = None
+        sudah = list(TripJoinRequest.objects.filter(user=request.user)
+                    .values_list('trip_post_id', flat=True))
+        qs = qs.exclude(user=request.user).exclude(id__in=sudah)
+    return [trip for trip in qs.order_by('-created_at') if trip.sisa_kuota_teman() > 0]
 
-    return render(request, 'customer/matchmaker.html', {
-        'trip_list': trip_list,
-    })
+
+def daftar_trip_matchmaker(request):
+    tab = request.GET.get('tab', 'jelajah')
+    if tab not in TAB_TRIP:
+        tab = 'jelajah'
+
+    # tab Posting Trip dan Permintaan Saya butuh login
+    if tab != 'jelajah' and not request.user.is_authenticated:
+        return redirect_to_login(request.get_full_path())
+
+    konteks = {'tab': tab}
+
+    if tab == 'jelajah':
+        konteks['trip_list'] = _trip_untuk_dijelajahi(request)
+
+    elif tab == 'posting':
+        if request.method == 'POST':
+            form = TripPostForm(request.POST, request.FILES)
+            if form.is_valid():
+                trip = form.save(commit=False)
+                trip.user = request.user
+                trip.save()
+                messages.success(request, "Trip berhasil diposting. Tunggu teman yang tertarik bergabung!")
+                return redirect(_url_tab('permintaan'))
+        else:
+            form = TripPostForm()
+        konteks['form'] = form
+
+    else:  # permintaan
+        konteks['masuk'] = (TripJoinRequest.objects
+                            .filter(trip_post__user=request.user)
+                            .select_related('user', 'trip_post')
+                            .order_by('-created_at'))
+        konteks['keluar'] = (TripJoinRequest.objects
+                            .filter(user=request.user)
+                            .select_related('trip_post', 'trip_post__user')
+                            .order_by('-created_at'))
+
+    return render(request, 'customer/matchmaker.html', konteks)
+
+
+def _proses_gabung(trip, user):
+    """Aturan pengajuan gabung. Mengembalikan (berhasil, pesan)."""
+    if trip.user == user:
+        return False, "Tidak bisa mengajukan gabung ke trip buatan sendiri."
+    if TripJoinRequest.objects.filter(trip_post=trip, user=user).exists():
+        return False, "Kamu sudah pernah mengajukan gabung ke trip ini."
+    if trip.sisa_kuota_teman() <= 0:
+        return False, "Kuota trip ini sudah penuh."
+    TripJoinRequest.objects.create(trip_post=trip, user=user)
+    return True, "Pengajuan gabung berhasil dikirim, menunggu persetujuan."
 
 
 @login_required
 def ajukan_gabung_trip(request, trip_id):
     trip = get_object_or_404(TripPost, id=trip_id)
-
-    if trip.user == request.user:
-        messages.error(request, "Tidak bisa mengajukan gabung ke trip buatan sendiri.")
-        return redirect('daftar_trip_matchmaker')
-
-    sudah_ada = TripJoinRequest.objects.filter(trip_post=trip, user=request.user).exists()
-    if sudah_ada:
-        messages.info(request, "Kamu sudah pernah mengajukan gabung ke trip ini.")
-        return redirect('daftar_trip_matchmaker')
-
-    if trip.sisa_kuota_teman() <= 0:
-        messages.error(request, "Kuota trip ini sudah penuh.")
-        return redirect('daftar_trip_matchmaker')
-
-    TripJoinRequest.objects.create(trip_post=trip, user=request.user)
-    messages.success(request, "Pengajuan gabung berhasil dikirim, menunggu persetujuan.")
+    berhasil, pesan = _proses_gabung(trip, request.user)
+    (messages.success if berhasil else messages.error)(request, pesan)
     return redirect('daftar_trip_matchmaker')
+
+
+@require_POST
+def swipe_trip(request, trip_id):
+    """Dipanggil lewat JavaScript saat kartu di-swipe (atau tombol X / hati ditekan)."""
+    trip = get_object_or_404(TripPost, id=trip_id)
+    arah = request.POST.get('arah')
+
+    if arah == 'kiri':
+        dilewati = request.session.get('trip_dilewati', [])
+        if trip.id not in dilewati:
+            dilewati.append(trip.id)
+            request.session['trip_dilewati'] = dilewati
+        return JsonResponse({'ok': True})
+
+    if arah == 'kanan':
+        if not request.user.is_authenticated:
+            login_url = f"{reverse('login')}?next={_url_tab('jelajah')}"
+            return JsonResponse({'ok': False, 'login': login_url}, status=401)
+        berhasil, pesan = _proses_gabung(trip, request.user)
+        return JsonResponse({'ok': berhasil, 'pesan': pesan})
+
+    return JsonResponse({'ok': False, 'pesan': 'Arah swipe tidak valid.'}, status=400)
+
+
+@login_required
+@require_POST
+def respon_permintaan_trip(request, req_id, aksi):
+    # hanya pembuat trip yang boleh menerima/menolak
+    permintaan = get_object_or_404(TripJoinRequest, id=req_id, trip_post__user=request.user)
+    nama = permintaan.user.first_name or permintaan.user.username
+
+    if permintaan.status != 'pending':
+        messages.info(request, "Permintaan ini sudah diproses.")
+    elif aksi == 'terima':
+        try:
+            permintaan.terima()
+            messages.success(request, f"{nama} diterima di trip \"{permintaan.trip_post.judul}\".")
+        except ValueError as e:
+            messages.error(request, str(e))
+    else:
+        permintaan.tolak()
+        messages.success(request, f"Permintaan dari {nama} ditolak.")
+
+    return redirect(_url_tab('permintaan'))
