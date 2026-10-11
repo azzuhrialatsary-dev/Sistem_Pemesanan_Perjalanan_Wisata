@@ -3,7 +3,7 @@ from django.contrib.auth import login as auth_login, logout as auth_logout, auth
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-from .models import Paket, Jadwal, Booking, TripPost, TripJoinRequest
+from .models import User, Paket, Jadwal, Booking, TripPost, TripJoinRequest
 from .forms import RegisterForm, BookingForm, get_peserta_formset
 
 
@@ -68,8 +68,17 @@ def register_view(request):
 
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        identitas = request.POST.get('username', '').strip()
         password = request.POST.get('password')
+
+        # boleh login pakai email ATAU username
+        username = identitas
+        if '@' in identitas:
+            pengguna = User.objects.filter(email__iexact=identitas).first()
+            if pengguna:
+                username = pengguna.username
+
+        user = authenticate(request, username=username, password=password)
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
