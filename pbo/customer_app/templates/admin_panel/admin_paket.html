@@ -1,0 +1,130 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Judul & Tombol Tambah Paket -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900">Kelola Paket Wisata</h1>
+        <button onclick="toggleModal(true)" class="flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-500">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Tambah Paket
+        </button>
+    </div>
+
+    <!-- Tabel Daftar Paket -->
+    <div class="overflow-x-auto rounded-2xl bg-white shadow-sm border border-gray-100">
+        <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-xs uppercase text-gray-700">
+                <tr>
+                    <th class="p-4">Paket</th>
+                    <th class="p-4">Destinasi</th>
+                    <th class="p-4">Durasi</th>
+                    <th class="p-4">Harga</th>
+                    <th class="p-4">Kategori</th>
+                    <th class="p-4 text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for paket in pakets %}
+                <tr class="hover:bg-gray-50">
+                    <td class="flex items-center gap-3 p-4">
+                        {% if paket.gambar %}
+                            <img src="{{ paket.gambar.url }}" alt="" class="h-10 w-14 rounded-lg object-cover">
+                        {% else %}
+                            <div class="h-10 w-14 rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-400">No Image</div>
+                        {% endif %}
+                        <span class="font-semibold text-gray-900">{{ paket.nama }}</span>
+                    </td>
+                    <td class="p-4">{{ paket.destinasi }}</td>
+                    <td class="p-4">{{ paket.durasi }} hari</td>
+                    <td class="p-4">Rp {{ paket.harga }}</td>
+                    <td class="p-4">
+                        <span class="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-600">{{ paket.kategori }}</span>
+                    </td>
+                    <td class="p-4 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            <!-- Tombol Edit -->
+                            <button class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            <!-- Tombol Hapus -->
+                            <a href="{% url 'customer_app:admin_hapus_paket' paket.id %}" onclick="return confirm('Yakin ingin menghapus paket ini?')" class="rounded-lg p-2 text-red-500 hover:bg-red-50">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-gray-400">Belum ada data paket wisata.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal Form Tambah Paket (Menggunakan form POST Django) -->
+    <div id="packageModal" class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center p-4">
+        <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+            <div class="mb-4 flex items-center justify-between border-b pb-3">
+                <h3 class="text-lg font-bold text-gray-900">Form Paket Wisata</h3>
+                <button onclick="toggleModal(false)" class="text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+
+            <!-- Form dikirim ke views.py menggunakan POST -->
+            <form action="" method="POST" enctype="multipart/form-data" class="space-y-4">
+                {% csrf_token %}
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama paket</label>
+                        <input type="text" name="nama" required class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-orange-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Destinasi</label>
+                        <input type="text" name="destinasi" required class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-orange-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Harga (Rp)</label>
+                        <input type="number" name="harga" required class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-orange-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Durasi (hari)</label>
+                        <input type="number" name="durasi" required class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-orange-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                        <select name="kategori" class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-orange-500 focus:outline-none bg-white">
+                            <option value="Pantai">Pantai</option>
+                            <option value="Gunung">Gunung</option>
+                            <option value="Budaya">Budaya</option>
+                            <option value="Kuliner">Kuliner</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Foto Paket</label>
+                        <input type="file" name="gambar" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-orange-50 file:py-2 file:px-4 file:text-sm file:font-semibold file:text-orange-600 hover:file:bg-orange-100">
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-3 border-t pt-4">
+                    <button type="button" onclick="toggleModal(false)" class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Batal</button>
+                    <button type="submit" class="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-500">Simpan Paket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Skrip Sederhana untuk Modal Pop-up -->
+<script>
+    function toggleOpen(open) {} // Cadangan jika dibutuhkan
+    function toggleModal(show) {
+        const modal = document.getElementById('packageModal');
+        if (show) {
+            modal.classList.remove('hidden');
+        } else {
+            modal.classList.add('hidden');
+        }
+    }
+</script>
+{% endblock %}

@@ -184,7 +184,6 @@ def login_view(request):
                 username = pengguna.username
 
         user = authenticate(request, username=username, password=password)
-        user = authenticate(request, username=username, password=password)
 
         if user is not None:
             auth_login(request, user)
@@ -298,7 +297,7 @@ def lihat_tiket(request, booking_id):
 
 @login_required
 def riwayat_booking(request):
-    booking_list = Booking.objects.filter(user=request.user).order_by('-dipesan_pada')
+    booking_list = Booking.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'customer/riwayat.html', {
         'booking_list': booking_list,
     })
@@ -349,3 +348,54 @@ def ajukan_gabung_trip(request, trip_id):
     TripJoinRequest.objects.create(trip_post=trip, user=request.user)
     messages.success(request, "Pengajuan gabung berhasil dikirim, menunggu persetujuan.")
     return redirect('daftar_trip_matchmaker')
+
+
+# =========================================================
+# PANEL ADMIN TRAVELHUB
+# =========================================================
+
+@login_required
+def admin_jadwal(request):
+    if not request.user.is_superuser:
+        messages.error(request, "Anda tidak memiliki hak akses sebagai admin.")
+        return redirect('home')
+
+    if request.method == 'POST':
+        paket_id = request.POST.get('paket_id')
+        tanggal = request.POST.get('tanggal')
+        kuota = request.POST.get('kuota')
+        
+        if paket_id and tanggal and kuota:
+            paket_obj = get_object_or_404(Paket, id=paket_id)
+            Jadwal.objects.create(
+                paket=paket_obj,
+                tanggal_berangkat=tanggal,
+                kuota=int(kuota),
+                kuota_tersisa=int(kuota)
+            )
+            messages.success(request, "Jadwal berhasil ditambahkan!")
+            return redirect('admin_jadwal')
+
+    # Ambil data semua jadwal dan hitung persentasenya dengan aman di Python
+    jadwal_all = Jadwal.objects.select_related('paket').all()
+    rows = []
+    for j in jadwal_all:
+        quota = j.kuota if j.kuota and j.kuota > 0 else 1
+        booked = max(0, quota - j.kuota_tersisa)
+        # Hitung persentase bilangan bulat di Python
+        persen = int((booked / quota) * 100)
+        
+        rows.append({
+            'tour': j.paket.nama if j.paket else 'Paket Dihapus',
+            'date': j.tanggal_berangkat.strftime('%d %b %Y') if j.tanggal_berangkat else '-',
+            'quota': j.kuota or 0,
+            'booked': booked,
+            'style_width': f"width: {persen}%;"
+        })
+
+    pakets = Paket.objects.all()
+
+    return render(request, 'admin_panel/admin_jadwal.html', {
+        'rows': rows,
+        'pakets': pakets,
+    })

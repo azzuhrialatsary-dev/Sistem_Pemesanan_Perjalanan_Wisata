@@ -1,0 +1,58 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Judul Halaman -->
+    <h1 class="text-2xl font-bold tracking-tight text-gray-900">Verifikasi QR E-Tiket</h1>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <!-- Kolom Scan Kamera -->
+        <div class="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+            <p class="mb-3 font-semibold text-gray-800">Scan kamera</p>
+            <!-- Wadah kamera QR Reader (bisa diintegrasikan dengan pustaka html5-qrcode berbasis JS jika diperlukan) -->
+            <div id="qr-reader" class="aspect-square w-full overflow-hidden rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 border border-dashed border-gray-300">
+                <svg class="h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+            <button type="button" class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-orange-500 transition">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Mulai Scan
+            </button>
+        </div>
+
+        <!-- Kolom Input Manual & Hasil Verifikasi -->
+        <div class="space-y-6">
+            <!-- Form Input Manual (Kirim ke views.py via POST/GET) -->
+            <form action="" method="POST" class="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+                {% csrf_token %}
+                <p class="mb-3 font-semibold text-gray-800">Input manual</p>
+                <div class="flex gap-2">
+                    <input type="text" name="kode_tiket" placeholder="TH-2611-0042" required class="w-full rounded-lg border border-gray-300 p-2.5 text-sm uppercase focus:border-orange-500 focus:outline-none">
+                    <button type="submit" class="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 transition">Cek</button>
+                </div>
+                <p class="mt-2 text-xs text-gray-400">Contoh: TH-2611-0042 (valid) atau TH-2611-0051 (belum bayar)</p>
+            </form>
+
+            <!-- Bagian Hasil Verifikasi (Muncul jika ada variabel result dari backend) -->
+            {% if result %}
+                {% if result.ok %}
+                <div class="flex items-center gap-4 rounded-2xl bg-emerald-50 border border-emerald-200 p-5 text-emerald-800">
+                    <svg class="h-10 w-10 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div>
+                        <p class="text-lg font-bold">Tiket VALID</p>
+                        <p class="text-sm font-medium">{{ result.code }} {% if result.name %}· {{ result.name }}{% endif %}</p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="flex items-center gap-4 rounded-2xl bg-rose-50 border border-rose-200 p-5 text-rose-800">
+                    <svg class="h-10 w-10 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div>
+                        <p class="text-lg font-bold">Tiket TIDAK VALID</p>
+                        <p class="text-sm font-medium">{{ result.code }} (Belum dibayar atau tidak ditemukan)</p>
+                    </div>
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

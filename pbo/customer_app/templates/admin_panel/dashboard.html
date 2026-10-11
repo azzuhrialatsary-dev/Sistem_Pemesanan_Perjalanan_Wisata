@@ -1,0 +1,82 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Judul Halaman Admin -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900">Dashboard</h1>
+    </div>
+
+    <!-- Grid Kartu Statistik -->
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <!-- Kartu 1: Pendapatan -->
+        <div class="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-500 font-bold">
+                $
+            </div>
+            <p class="mt-3 text-sm text-gray-500">Pendapatan Bulan Ini</p>
+            <p class="font-display text-2xl font-bold text-gray-900">Rp {{ pendapatan_bulan_ini|default:"0" }}</p>
+        </div>
+
+        <!-- Kartu 2: Okupansi Rata-rata -->
+        <div class="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-500 font-bold">
+                %
+            </div>
+            <p class="mt-3 text-sm text-gray-500">Okupansi Rata-rata</p>
+            <p class="font-display text-2xl font-bold text-gray-900">{{ okupansi_rata|default:"0" }}%</p>
+        </div>
+
+        <!-- Kartu 3: Total Pesanan -->
+        <div class="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-500 font-bold">
+                🛍️
+            </div>
+            <p class="mt-3 text-sm text-gray-500">Total Pesanan</p>
+            <p class="font-display text-2xl font-bold text-gray-900">{{ total_pesanan|default:"0" }}</p>
+        </div>
+
+        <!-- Kartu 4: Pelanggan Aktif -->
+        <div class="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-500 font-bold">
+                👥
+            </div>
+            <p class="mt-3 text-sm text-gray-500">Pelanggan Aktif</p>
+            <p class="font-display text-2xl font-bold text-gray-900">{{ pelanggan_aktif|default:"0" }}</p>
+        </div>
+    </div>
+
+    <!-- Bagian Grafik / Charts -->
+    <div class="mt-6 grid gap-6 xl:grid-cols-2">
+        <!-- Kartu Grafik 1: Pendapatan Bulanan -->
+        <div class="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+            <p class="mb-4 font-semibold text-gray-800">Pendapatan Bulanan</p>
+            <div class="h-72 flex flex-col items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200 p-4 text-center">
+                <svg class="h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                <span class="text-sm font-medium text-gray-600">Area Grafik Pendapatan Bulanan</span>
+                <span class="text-xs text-gray-400 mt-1">Dapat diintegrasikan dengan Chart.js menggunakan data dari Python</span>
+            </div>
+        </div>
+
+        <!-- Kartu Grafik 2: Okupansi per Paket -->
+        <div class="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+            <p class="mb-4 font-semibold text-gray-800">Okupansi per Paket (%)</p>
+            <div class="h-72 flex flex-col items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200 p-4 text-center">
+                <svg class="h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span class="text-sm font-medium text-gray-600">Area Grafik Batang Okupansi Paket</span>
+                <span class="text-xs text-gray-400 mt-1">Menampilkan persentase kuota terisi</span>
+            </div>
+        </div>
+
+        <!-- Kartu Grafik 3: Pesanan per Status -->
+        <div class="rounded-2xl bg-white p-5 shadow-sm border border-gray-100 xl:col-span-2">
+            <p class="mb-4 font-semibold text-gray-800">Pesanan per Status</p>
+            <div class="h-72 flex flex-col items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200 p-4 text-center">
+                <svg class="h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                <span class="text-sm font-medium text-gray-600">Area Diagram Status Pesanan (Paid, Unpaid, Cancelled)</span>
+                <span class="text-xs text-gray-400 mt-1">Distribusi data pesanan keseluruhan</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
