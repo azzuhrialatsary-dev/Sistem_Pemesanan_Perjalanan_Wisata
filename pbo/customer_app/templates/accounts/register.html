@@ -1,37 +1,68 @@
 {% extends "base.html" %}
-{% block title %}Daftar - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+{% load static %}
+{% block title %}Daftar - TravelHub{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block messages %}{% endblock %}
+{% block footer %}{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto px-4 py-16">
-    <div class="bg-white rounded-2xl shadow-sm p-8">
-        <h1 class="font-display text-2xl font-bold mb-6 text-center">Buat Akun</h1>
+<div class="min-h-screen grid md:grid-cols-2 bg-surface">
 
-        <form method="POST">
-            {% csrf_token %}
+    {# ===== Kiri: foto + teks ===== #}
+    <div class="relative hidden md:block bg-gradient-to-br from-ocean to-primary overflow-hidden">
+        <img src="{% static 'customer/img/komodo.jpg' %}" alt="" onerror="this.remove()"
+             class="absolute inset-0 w-full h-full object-cover">
+        <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ocean/90 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 p-12 text-white">
+            <h2 class="font-display font-bold text-4xl leading-snug mb-2">Jelajahi 17.000 pulau, satu akun.</h2>
+            <p class="text-white/90">Pesan paket wisata dan temukan teman trip sefrekuensi.</p>
+        </div>
+    </div>
 
-            {% for field in form %}
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <p class="text-red-500 text-xs mt-1">{{ field.errors|striptags }}</p>
+    {# ===== Kanan: form ===== #}
+    <div class="flex items-center justify-center px-6 py-10">
+        <div class="w-full max-w-md">
+            <a href="{% url 'home' %}" class="inline-flex items-center gap-2.5 mb-8">
+                <span class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
+                    <i data-lucide="compass" class="w-5 h-5"></i>
+                </span>
+                <span class="font-display font-bold text-xl text-ocean">TravelHub</span>
+            </a>
+
+            <h1 class="font-display font-bold text-3xl text-ocean mb-1">Buat akun baru</h1>
+            <p class="text-slate-500 mb-7">Gratis dan hanya butuh 1 menit.</p>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="rounded-xl px-4 py-3 text-sm mb-4 bg-red-50 text-red-600">
+                        {{ form.non_field_errors|striptags }}
+                    </div>
                 {% endif %}
-                {% if field.help_text %}
-                    <p class="text-slate-400 text-xs mt-1">{{ field.help_text|safe }}</p>
-                {% endif %}
-            </div>
-            {% endfor %}
 
-            <button type="submit"
-                    class="w-full bg-primary text-white py-3 rounded-xl font-medium hover:opacity-90 mt-2">
-                Daftar
-            </button>
-        </form>
+                {% for field in form %}
+                <div class="mb-4">
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1.5">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <p class="text-red-500 text-xs mt-1.5">{{ field.errors|striptags }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
 
-        <p class="text-sm text-slate-500 text-center mt-6">
-            Sudah punya akun?
-            <a href="{% url 'login' %}" class="text-primary font-medium">Masuk di sini</a>
-        </p>
+                <button type="submit"
+                        class="w-full bg-accent text-white py-3 rounded-full font-medium shadow-soft hover:opacity-90 mt-2">
+                    Daftar
+                </button>
+            </form>
+
+            <p class="text-sm text-slate-500 text-center mt-6">
+                Sudah punya akun?
+                <a href="{% url 'login' %}" class="text-primary font-semibold">Masuk</a>
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}
