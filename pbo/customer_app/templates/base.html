@@ -1,12 +1,14 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistem Pemesanan Perjalanan Wisata{% endblock %}</title>
+    <title>{% block title %}TravelHub{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@0.453.0"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -16,44 +18,61 @@
                         display: ['Poppins', 'sans-serif'],
                     },
                     colors: {
-                        primary: '#2E8B8B',     /* teal, mirip warna utama Lovable */
-                        accent: '#E8863A',      /* oranye, warna aksen */
-                        ocean: '#1E3A5F',       /* biru tua untuk footer/header gelap */
+                        primary: '#0B8A8F',
+                        accent: '#F58220',
+                        ocean: '#003B5C',
+                        secondary: '#DFF3F3',
+                        surface: '#F5FBFC',
+                    },
+                    boxShadow: {
+                        lift: '0 12px 30px -8px rgba(0,59,92,.25)',
+                        soft: '0 4px 16px -4px rgba(0,59,92,.12)',
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="font-sans bg-slate-50 text-slate-800">
+<body class="font-sans bg-surface text-slate-800">
+
+    {% url 'home' as home_url %}
+    {% url 'daftar_paket' as paket_url %}
+    {% url 'daftar_trip_matchmaker' as trip_url %}
+    {% url 'riwayat_booking' as riwayat_url %}
 
     {% block navbar %}
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="{% url 'home' %}" class="font-display font-bold text-base md:text-lg text-primary leading-tight max-w-[220px] md:max-w-none">
-                Sistem Pemesanan Perjalanan Wisata
+    <nav class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 h-[70px] flex items-center justify-between">
+            <a href="{{ home_url }}" class="flex items-center gap-2.5">
+                <span class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center">
+                    <i data-lucide="compass" class="w-5 h-5"></i>
+                </span>
+                <span class="font-display font-bold text-xl text-ocean">TravelHub</span>
             </a>
-            <div class="hidden md:flex items-center gap-6 text-sm font-medium">
-                <a href="{% url 'daftar_paket' %}" class="hover:text-primary">Paket Wisata</a>
-                <a href="{% url 'daftar_trip_matchmaker' %}" class="hover:text-primary">Cari Teman Trip</a>
-                {% if user.is_authenticated %}
-                <a href="{% url 'riwayat_booking' %}" class="hover:text-primary">Riwayat Pesanan</a>
-                {% endif %}
+
+            <div class="hidden md:flex items-center gap-1 text-sm font-medium">
+                <a href="{{ home_url }}" class="px-4 py-2 rounded-full {% if request.path == home_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Beranda</a>
+                <a href="{{ paket_url }}" class="px-4 py-2 rounded-full {% if request.path == paket_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Paket Wisata</a>
+                <a href="{{ trip_url }}" class="px-4 py-2 rounded-full {% if request.path == trip_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Trip Matchmaker</a>
+                <a href="{{ riwayat_url }}" class="px-4 py-2 rounded-full {% if request.path == riwayat_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Pesanan Saya</a>
             </div>
 
             {% if user.is_authenticated %}
-                <div class="flex items-center gap-3">
-                    <span class="text-sm text-slate-500 hidden sm:inline">Hai, {{ user.username }}</span>
-                    <a href="{% url 'logout' %}"
-                    class="border border-primary text-primary px-4 py-2 rounded-full text-sm font-medium hover:bg-primary hover:text-white transition">
-                        Keluar
+                <div class="flex items-center gap-4 text-sm font-medium">
+                    <span class="flex items-center gap-1.5 text-slate-700">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Profil</span>
+                    </span>
+                    <a href="{% url 'logout' %}" title="Keluar" class="text-slate-700 hover:text-primary">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
                     </a>
                 </div>
             {% else %}
-                <a href="{% url 'login' %}"
-                class="bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:opacity-90">
-                    Masuk
-                </a>
+                <div class="flex items-center gap-3 text-sm font-medium">
+                    <a href="{% url 'login' %}" class="text-slate-800 hover:text-primary">Masuk</a>
+                    <a href="{% url 'register' %}"
+                    class="bg-accent text-white px-5 py-2 rounded-full hover:opacity-90">Daftar</a>
+                </div>
             {% endif %}
         </div>
     </nav>
@@ -79,12 +98,35 @@
     </main>
 
     {% block footer %}
-    <footer class="bg-ocean text-white mt-16">
-        <div class="max-w-6xl mx-auto px-4 py-10 text-sm text-slate-300">
-            Sistem Pemesanan Perjalanan Wisata (Tugas Kelompok)
+    <footer class="bg-ocean text-white mt-20">
+        <div class="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-10">
+            <div>
+                <p class="font-display font-bold text-xl mb-3">TravelHub</p>
+                <p class="text-sm text-slate-300 max-w-xs leading-relaxed">
+                    Reservasi paket wisata Nusantara &amp; temukan teman perjalanan lewat Trip Matchmaker.
+                </p>
+            </div>
+            <div>
+                <p class="font-semibold text-sm mb-3">Jelajahi</p>
+                <ul class="space-y-2 text-sm text-slate-300">
+                    <li><a href="{{ paket_url }}" class="hover:text-white">Paket Wisata</a></li>
+                    <li><a href="{{ trip_url }}" class="hover:text-white">Trip Matchmaker</a></li>
+                </ul>
+            </div>
+            <div>
+                <p class="font-semibold text-sm mb-3">Kontak</p>
+                <ul class="space-y-2 text-sm text-slate-300">
+                    <li>halo@travelhub.id</li>
+                    <li>+62 812 0000 0000</li>
+                </ul>
+            </div>
+        </div>
+        <div class="border-t border-white/10 py-4 text-center text-xs text-slate-400">
+            &copy; 2026 TravelHub
         </div>
     </footer>
     {% endblock %}
 
+    <script>lucide.createIcons();</script>
 </body>
 </html>
