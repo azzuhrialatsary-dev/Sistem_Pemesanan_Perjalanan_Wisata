@@ -1,0 +1,36 @@
+{% extends "panel/base.html" %}
+{% block title %}Ekspor Laporan{% endblock %}
+{% block page_title %}Ekspor Laporan{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <h2 class="text-2xl font-bold text-slate-800 mb-6">Ekspor Laporan Sistem</h2>
+    <form method="get" action="{% url 'panel_laporan_ekspor' %}" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Tanggal Mulai</label>
+                <input type="date" name="dari" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Tanggal Akhir</label>
+                <input type="date" name="sampai" value="{{ hari_ini|date:'Y-m-d' }}" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Jenis Laporan</label>
+                <select name="jenis" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                    {% for kode, nama in jenis_laporan.items %}<option value="{{ kode }}">{{ nama }}</option>{% endfor %}
+                </select>
+                <p class="text-xs text-slate-400 mt-2">Periode dihitung dari tanggal pesanan dibuat. Kosongkan tanggal mulai untuk semua data sejak awal.</p>
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button name="format" value="xlsx" class="flex-1 flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-semibold shadow-sm shadow-emerald-600/20 group">
+                <i class="fa-solid fa-file-excel text-xl group-hover:scale-110 transition-transform"></i> Ekspor ke Excel (.xlsx)
+            </button>
+            <button name="format" value="pdf" class="flex-1 flex items-center justify-center gap-3 bg-rose-600 hover:bg-rose-700 text-white py-4 rounded-xl font-semibold shadow-sm shadow-rose-600/20 group">
+                <i class="fa-solid fa-file-pdf text-xl group-hover:scale-110 transition-transform"></i> Ekspor ke PDF (.pdf)
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

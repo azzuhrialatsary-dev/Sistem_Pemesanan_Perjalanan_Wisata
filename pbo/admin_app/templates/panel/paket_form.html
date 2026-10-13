@@ -1,0 +1,51 @@
+{% extends "panel/base.html" %}
+{% block title %}{% if paket %}Edit{% else %}Tambah{% endif %} Paket{% endblock %}
+{% block page_title %}{% if paket %}Edit Paket{% else %}Tambah Paket{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8">
+            <h2 class="text-lg font-bold text-slate-800 mb-5">Informasi Paket</h2>
+            {{ form.non_field_errors }}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {% for f in form %}
+                <div class="{% if f.name == 'deskripsi' or f.name == 'nama' or f.name == 'fasilitas' %}md:col-span-2{% endif %}">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">{{ f.label }}</label>
+                    {{ f }}
+                    {% if f.name == 'foto' and paket.foto %}<p class="text-xs text-slate-400 mt-1">Saat ini: {{ paket.foto.name }}</p>{% endif %}
+                    {% for e in f.errors %}<p class="text-xs text-rose-600 mt-1">{{ e }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8">
+            <h2 class="text-lg font-bold text-slate-800 mb-1">Itinerary</h2>
+            <p class="text-sm text-slate-500 mb-5">Isi rencana per hari. Baris kosong diabaikan; centang "Hapus" untuk membuang baris.</p>
+            {{ formset.management_form }}
+            {{ formset.non_form_errors }}
+            <div class="space-y-3">
+                {% for fs in formset %}
+                <div class="grid grid-cols-12 gap-2 items-start">
+                    {{ fs.id }}
+                    <div class="col-span-3 sm:col-span-2">{{ fs.hari_ke }}</div>
+                    <div class="col-span-9 sm:col-span-4">{{ fs.judul_kegiatan }}</div>
+                    <div class="col-span-9 sm:col-span-5">{{ fs.deskripsi }}</div>
+                    <div class="col-span-3 sm:col-span-1 text-center pt-2">
+                        {% if fs.instance.pk %}<label class="text-xs text-rose-600">{{ fs.DELETE }} Hapus</label>{% endif %}
+                    </div>
+                    <div class="col-span-12">{% for k, errs in fs.errors.items %}{% for e in errs %}<p class="text-xs text-rose-600">{{ k }}: {{ e }}</p>{% endfor %}{% endfor %}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <a href="{% url 'panel_paket' %}" class="px-5 py-2.5 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50">Batal</a>
+            <button class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm">Simpan</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
