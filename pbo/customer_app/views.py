@@ -201,7 +201,8 @@ def login_view(request):
 
         if user is not None:
             auth_login(request, user)
-            next_url = request.GET.get('next') or 'home'
+            next_url = request.GET.get('next') or (
+                'panel_dashboard' if (user.is_superuser or user.role == 'admin') else 'home')
             return redirect(next_url)
         else:
             messages.error(request, "Username atau password salah.")

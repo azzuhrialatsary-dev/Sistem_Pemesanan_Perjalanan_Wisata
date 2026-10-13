@@ -1,0 +1,58 @@
+{% extends "panel/base.html" %}
+{% block title %}Pesanan{% endblock %}
+{% block page_title %}Monitoring Pesanan{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 class="text-xl font-bold text-slate-800">Monitoring Pesanan</h2>
+        <form method="get" class="flex gap-2">
+            <input type="text" name="q" value="{{ q }}" placeholder="Kode / nama / paket" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white outline-none focus:border-brand-500">
+            <select name="status" onchange="this.form.submit()" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white outline-none focus:border-brand-500">
+                <option value="">Semua Status</option>
+                {% for val, label in status_choices %}<option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            <button class="bg-slate-100 hover:bg-slate-200 px-3 rounded-lg text-sm"><i class="fa-solid fa-search"></i></button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-slate-600">
+                <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-4 font-semibold">Kode</th>
+                        <th class="px-6 py-4 font-semibold">Pelanggan</th>
+                        <th class="px-6 py-4 font-semibold">Paket</th>
+                        <th class="px-6 py-4 font-semibold">Tgl Pesan</th>
+                        <th class="px-6 py-4 font-semibold">Total</th>
+                        <th class="px-6 py-4 font-semibold">Status</th>
+                        <th class="px-6 py-4 font-semibold text-center">Detail</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for b in page_obj %}
+                    <tr class="hover:bg-slate-50/50">
+                        <td class="px-6 py-4 font-medium text-slate-900">{{ b.kode_booking }}</td>
+                        <td class="px-6 py-4">
+                            <div class="font-medium text-slate-800">{{ b.user.get_full_name|default:b.user.username }}</div>
+                            <div class="text-xs text-slate-400">{{ b.user.email|default:"-" }}</div>
+                        </td>
+                        <td class="px-6 py-4">{{ b.jadwal.paket.nama }}<div class="text-xs text-slate-400">{{ b.jadwal.tanggal_berangkat|date:"d M Y" }} &middot; {{ b.jumlah_peserta }} org</div></td>
+                        <td class="px-6 py-4">{{ b.created_at|date:"d M Y" }}</td>
+                        <td class="px-6 py-4 font-medium">{{ b.total_harga_rupiah }}</td>
+                        <td class="px-6 py-4">{% include "panel/_status.html" with status=b.status label=b.get_status_display %}</td>
+                        <td class="px-6 py-4 text-center">
+                            <a href="{% url 'panel_pesanan_detail' b.id %}" class="text-brand-600 hover:text-brand-800 bg-brand-50 px-3 py-1 rounded text-xs font-semibold">Lihat</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="px-6 py-10 text-center text-slate-400">Tidak ada pesanan.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "panel/_pagination.html" %}
+    </div>
+</div>
+{% endblock %}

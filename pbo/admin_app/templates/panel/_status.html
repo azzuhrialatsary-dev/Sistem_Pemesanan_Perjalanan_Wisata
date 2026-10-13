@@ -1,0 +1,5 @@
+{% if status == 'paid' %}<span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-xs font-medium border border-emerald-100"><i class="fa-solid fa-check-circle text-emerald-500"></i> {{ label }}</span>
+{% elif status == 'unpaid' %}<span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md text-xs font-medium border border-amber-100"><i class="fa-regular fa-clock text-amber-500"></i> {{ label }}</span>
+{% elif status == 'cancelled' %}<span class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-md text-xs font-medium border border-rose-100"><i class="fa-solid fa-xmark-circle text-rose-500"></i> {{ label }}</span>
+{% else %}<span class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-xs font-medium border border-slate-200"><i class="fa-solid fa-flag-checkered text-slate-400"></i> {{ label }}</span>
+{% endif %}
