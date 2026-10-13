@@ -1,49 +1,102 @@
 {% extends "base.html" %}
-{% block title %}Pembayaran - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+{% block title %}Pembayaran - TravelHub{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto px-4 py-12">
 
-    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
-        <span class="text-xs text-primary font-medium uppercase">Langkah 3 dari 3</span>
-        <h1 class="font-display text-2xl font-bold mt-1">Ringkasan Pesanan</h1>
+{# ===== Header ===== #}
+<section class="bg-gradient-to-r from-ocean to-primary text-white">
+    <div class="max-w-6xl mx-auto px-4 py-12">
+        <h1 class="font-display font-bold text-4xl">Pembayaran</h1>
+        <p class="mt-1 text-white/90">Kode pesanan {{ booking.kode_booking }}</p>
+    </div>
+</section>
+
+<form method="post" class="max-w-5xl mx-auto px-4 py-10 grid lg:grid-cols-[1fr_300px] gap-6 items-start">
+    {% csrf_token %}
+
+    <div class="space-y-5">
+
+        {# ----- hitung mundur ----- #}
+        <div class="rounded-3xl bg-gradient-to-r from-accent to-red-500 text-white p-5 flex items-center gap-4 shadow-soft">
+            <span class="w-11 h-11 rounded-full border-2 border-white/80 flex items-center justify-center shrink-0">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+            </span>
+            <div>
+                <p class="text-sm text-white/90">Selesaikan pembayaran dalam</p>
+                <p id="hitung-mundur" class="font-display font-bold text-3xl leading-tight">--:--:--</p>
+            </div>
+        </div>
+
+        {# ----- metode pembayaran ----- #}
+        <div class="bg-white rounded-3xl shadow-soft p-5">
+            <h2 class="font-display font-semibold text-ocean mb-4">Metode pembayaran</h2>
+            <div class="space-y-3">
+                {% for kode, label, ikon in metode_list %}
+                <label class="opsi-metode flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-sm cursor-pointer
+                            {% if forloop.first %}border-primary bg-secondary{% else %}border-slate-200{% endif %}">
+                    <input type="radio" name="metode" value="{{ kode }}" {% if forloop.first %}checked{% endif %} class="accent-primary">
+                    <i data-lucide="{{ ikon }}" class="w-5 h-5 text-primary"></i>
+                    <span class="font-medium">{{ label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6 space-y-3 text-sm">
-        <div class="flex justify-between">
-            <span class="text-slate-500">Kode Booking</span>
-            <span class="font-medium">{{ booking.kode_booking }}</span>
-        </div>
-        <div class="flex justify-between">
-            <span class="text-slate-500">Paket</span>
-            <span class="font-medium">{{ booking.jadwal.paket.nama }}</span>
-        </div>
-        <div class="flex justify-between">
-            <span class="text-slate-500">Tanggal Berangkat</span>
-            <span class="font-medium">{{ booking.jadwal.tanggal_berangkat|date:"d M Y" }}</span>
-        </div>
-        <div class="flex justify-between">
-            <span class="text-slate-500">Jumlah Peserta</span>
-            <span class="font-medium">{{ booking.jumlah_peserta }} orang</span>
-        </div>
-        <hr class="border-slate-100">
-        <div class="flex justify-between text-base">
-            <span class="font-semibold">Total Bayar</span>
-            <span class="font-bold text-primary">Rp {{ booking.total_harga|floatformat:0 }}</span>
-        </div>
-    </div>
+    {# ----- ringkasan pesanan ----- #}
+    <aside class="bg-white rounded-3xl shadow-lift p-5 lg:sticky lg:top-24 text-sm">
+        <h2 class="font-display font-semibold text-ocean mb-3">Ringkasan Pesanan</h2>
+        <p class="font-medium">{{ paket.nama }}</p>
+        <p class="text-slate-500 mt-2 pb-3 border-b border-slate-200">
+            {{ booking.jadwal.tanggal_berangkat|date:"d M Y" }} &middot; {{ booking.jumlah_peserta }} peserta
+        </p>
 
-    <div class="bg-amber-50 text-amber-700 text-xs rounded-lg px-4 py-3 mb-6">
-        Ini pembayaran simulasi untuk keperluan tugas kuliah, klik tombol di bawah
-        untuk langsung menandai pesanan sebagai lunas.
-    </div>
+        <div class="space-y-1 py-3">
+            <div class="flex justify-between"><span>Subtotal</span><span>{{ booking.total_harga_rupiah }}</span></div>
+            <div class="flex justify-between"><span>Biaya layanan</span><span>{{ booking.biaya_layanan_rupiah }}</span></div>
+        </div>
 
-    <form method="POST">
-        {% csrf_token %}
+        <div class="flex justify-between items-center pb-4">
+            <span class="font-semibold">Total</span>
+            <span class="font-display font-bold text-accent text-lg">{{ booking.total_bayar_rupiah }}</span>
+        </div>
+
         <button type="submit"
-                class="w-full bg-accent text-white py-3 rounded-xl font-medium hover:opacity-90">
+                class="w-full bg-accent text-white font-semibold py-3 rounded-full shadow-soft hover:opacity-90">
             Konfirmasi Pembayaran
         </button>
-    </form>
-</div>
+    </aside>
+</form>
+
+<script>
+(function () {
+    // ----- hitung mundur 24 jam -----
+    var el = document.getElementById('hitung-mundur');
+    var akhir = Date.now() + Number("{{ sisa_detik }}") * 1000;
+    
+    function dua(n) { return (n < 10 ? '0' : '') + n; }
+
+    function tampil() {
+        var sisa = Math.max(0, Math.round((akhir - Date.now()) / 1000));
+        el.textContent = dua(Math.floor(sisa / 3600)) + ':' + dua(Math.floor((sisa % 3600) / 60)) + ':' + dua(sisa % 60);
+        if (sisa === 0) { window.location.reload(); }   // server membatalkan pesanan yang kedaluwarsa
+    }
+    tampil();
+    setInterval(tampil, 1000);
+
+    // ----- tandai metode pembayaran yang dipilih -----
+    var opsi = document.querySelectorAll('.opsi-metode');
+    document.querySelectorAll('input[name="metode"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            opsi.forEach(function (o) {
+                o.classList.remove('border-primary', 'bg-secondary');
+                o.classList.add('border-slate-200');
+            });
+            var label = radio.closest('.opsi-metode');
+            label.classList.remove('border-slate-200');
+            label.classList.add('border-primary', 'bg-secondary');
+        });
+    });
+})();
+</script>
 {% endblock %}

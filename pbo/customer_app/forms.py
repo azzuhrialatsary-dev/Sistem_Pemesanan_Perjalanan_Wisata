@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from django.forms import inlineformset_factory
+from django.forms import BaseFormSet, formset_factory, inlineformset_factory
 from .models import User, Booking, Peserta, TripPost
 
 class RegisterForm(UserCreationForm):
@@ -104,6 +104,57 @@ class TripPostForm(forms.ModelForm):
         if data.get('kuota_teman') is not None and data['kuota_teman'] < 1:
             self.add_error('kuota_teman', "Minimal 1 slot.")
         return data
+
+GAYA_INPUT_BOOKING = ('w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm '
+                      'outline-none focus:border-primary focus:ring-2 focus:ring-primary/20')
+
+
+class PesertaForm(forms.ModelForm):
+    jenis_kelamin = forms.ChoiceField(choices=Peserta.JENIS_KELAMIN, label="Jenis kelamin")
+
+    class Meta:
+        model = Peserta
+        fields = ['nama_lengkap', 'no_identitas', 'tanggal_lahir', 'jenis_kelamin',
+                  'kontak_darurat_nama', 'kontak_darurat_hp']
+        labels = {
+            'nama_lengkap': 'Nama lengkap',
+            'no_identitas': 'NIK / No. Paspor',
+            'tanggal_lahir': 'Tanggal lahir',
+            'kontak_darurat_nama': 'Kontak darurat (nama)',
+            'kontak_darurat_hp': 'No. HP kontak darurat',
+        }
+        widgets = {
+            'tanggal_lahir': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for nama in ('tanggal_lahir', 'kontak_darurat_nama', 'kontak_darurat_hp'):
+            self.fields[nama].required = True
+        for field in self.fields.values():
+            field.widget.attrs['class'] = GAYA_INPUT_BOOKING
+            if field.required:
+                field.widget.attrs['required'] = True
+
+    def clean_tanggal_lahir(self):
+        tanggal = self.cleaned_data['tanggal_lahir']
+        if tanggal and tanggal > timezone.localdate():
+            raise forms.ValidationError("Tanggal lahir tidak boleh di masa depan.")
+        return tanggal
+
+
+class BasePesertaFormSet(BaseFormSet):
+    def _construct_form(self, i, **kwargs):
+        form = super()._construct_form(i, **kwargs)
+        # semua kartu peserta wajib diisi (tidak boleh dibiarkan kosong)
+        form.empty_permitted = False
+        return form
+
+
+PesertaFormSet = formset_factory(
+    PesertaForm, formset=BasePesertaFormSet,
+    extra=0, min_num=1, validate_min=True, max_num=10, validate_max=True,
+)
 
 class BookingForm(forms.Form):
     jumlah_peserta = forms.IntegerField(

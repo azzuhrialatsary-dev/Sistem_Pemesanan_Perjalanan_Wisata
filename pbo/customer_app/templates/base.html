@@ -52,7 +52,7 @@
 
             <div class="hidden md:flex items-center gap-1 text-sm font-medium">
                 <a href="{{ home_url }}" class="px-4 py-2 rounded-full {% if request.path == home_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Beranda</a>
-                <a href="{{ paket_url }}" class="px-4 py-2 rounded-full {% if request.path == paket_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Paket Wisata</a>
+                <a href="{{ paket_url }}" class="px-4 py-2 rounded-full {% if request.path == paket_url or '/paket/' in request.path %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Paket Wisata</a>
                 <a href="{{ trip_url }}" class="px-4 py-2 rounded-full {% if request.path == trip_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Trip Matchmaker</a>
                 <a href="{{ riwayat_url }}" class="px-4 py-2 rounded-full {% if request.path == riwayat_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Pesanan Saya</a>
             </div>
