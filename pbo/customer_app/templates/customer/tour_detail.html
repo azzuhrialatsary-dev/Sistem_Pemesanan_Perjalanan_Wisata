@@ -1,76 +1,188 @@
 {% extends "base.html" %}
-{% block title %}{{ paket.nama }} - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+{% load l10n %}
+{% block title %}{{ paket.nama }} - TravelHub{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-10">
+<div class="max-w-6xl mx-auto px-4 py-6">
 
-    <div class="h-64 bg-slate-200 rounded-2xl flex items-center justify-center text-slate-400 mb-6">
-        {% if paket.foto %}
-            <img src="{{ paket.foto.url }}" class="w-full h-full object-cover rounded-2xl">
-        {% else %}
-            Foto Paket
+    {# ===== Galeri foto ===== #}
+    <div class="grid gap-4 {% if foto_list|length > 1 %}lg:grid-cols-[1fr_80px]{% endif %}">
+        <div class="relative aspect-video rounded-3xl overflow-hidden bg-gradient-to-br from-ocean to-primary">
+            {% if foto_list %}
+            <img id="foto-utama" src="{{ foto_list.0 }}" alt="{{ paket.nama }}" class="w-full h-full object-cover">
+            {% endif %}
+        </div>
+
+        {% if foto_list|length > 1 %}
+        <div class="relative">
+            <div class="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-hidden lg:absolute lg:inset-0">
+                {% for url in foto_list %}
+                <button type="button" data-foto="{{ url }}"
+                        class="thumb relative shrink-0 w-24 h-16 lg:w-auto lg:h-auto lg:flex-1 lg:min-h-0 rounded-2xl overflow-hidden border-2 {% if forloop.first %}border-accent{% else %}border-transparent{% endif %}">
+                    <img src="{{ url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
+                </button>
+                {% endfor %}
+            </div>
+        </div>
         {% endif %}
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid lg:grid-cols-[1fr_340px] gap-8 mt-8 items-start">
 
-        <div class="lg:col-span-2">
-            <span class="text-xs font-medium text-primary uppercase">{{ paket.get_kategori_display }}</span>
-            <h1 class="font-display text-3xl font-bold mt-1 mb-2">{{ paket.nama }}</h1>
-            <p class="text-slate-500 mb-6">{{ paket.destinasi }} &middot; {{ paket.durasi_hari }} hari</p>
+        {# ===== Kiri: info paket ===== #}
+        <div>
+            <span class="inline-block bg-secondary text-primary text-xs font-semibold px-3 py-1 rounded-full">
+                {{ paket.get_kategori_display }}
+            </span>
+            <h1 class="font-display font-bold text-3xl text-ocean mt-3">{{ paket.nama }}</h1>
 
-            <p class="text-slate-600 leading-relaxed mb-8">{{ paket.deskripsi }}</p>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 mt-2">
+                <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i>{{ paket.destinasi }}</span>
+                <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i>{{ paket.durasi_hari }} hari</span>
+                <span class="flex items-center gap-1">
+                    <i data-lucide="star" class="w-3.5 h-3.5 text-accent fill-accent"></i>
+                    <span class="font-medium text-slate-700">{{ paket.rating|unlocalize }}</span>
+                    {% if paket.jumlah_ulasan %}({{ paket.jumlah_ulasan }} ulasan){% endif %}
+                </span>
+            </div>
 
-            <h2 class="font-display font-semibold text-xl mb-4">Itinerary Perjalanan</h2>
-            <div class="space-y-4">
+            <p class="text-slate-600 leading-relaxed mt-5">{{ paket.deskripsi }}</p>
+
+            {% if fasilitas_list %}
+            <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-2 mt-5 text-sm text-slate-700">
+                {% for item in fasilitas_list %}
+                <li class="flex items-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4 text-primary shrink-0"></i>{{ item }}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {# ===== Itinerary ===== #}
+            <h2 class="font-display font-bold text-2xl text-ocean mt-10 mb-4">Itinerary</h2>
+            {% if itinerary_list %}
+            <div class="bg-white rounded-3xl shadow-soft px-4 py-1 divide-y divide-slate-200">
                 {% for item in itinerary_list %}
-                <div class="bg-white rounded-xl p-4 shadow-sm flex gap-4">
-                    <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">
-                        {{ item.hari_ke }}
-                    </div>
-                    <div>
-                        <h3 class="font-medium">{{ item.judul_kegiatan }}</h3>
-                        <p class="text-sm text-slate-500">{{ item.deskripsi }}</p>
-                    </div>
-                </div>
-                {% empty %}
-                <p class="text-slate-400 text-sm">Itinerary belum diatur admin.</p>
+                <details class="group py-3" {% if forloop.first %}open{% endif %}>
+                    <summary class="flex items-center gap-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        <span class="bg-primary text-white text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0">Hari {{ item.hari_ke }}</span>
+                        <span class="font-medium text-sm text-ocean flex-1">{{ item.judul_kegiatan }}</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    {% if item.deskripsi %}
+                    <p class="text-sm text-slate-500 mt-2 pr-6">{{ item.deskripsi }}</p>
+                    {% endif %}
+                </details>
                 {% endfor %}
             </div>
+            {% else %}
+            <p class="text-slate-400 text-sm">Itinerary belum diatur admin.</p>
+            {% endif %}
         </div>
 
-        <div class="bg-white rounded-2xl p-6 shadow-lift h-fit sticky top-20">
-            <p class="text-sm text-slate-500">Mulai dari</p>
-            <p class="text-primary font-bold text-2xl mb-4">{{ paket.harga_format_rupiah }}</p>
+        {# ===== Kanan: kartu pemesanan ===== #}
+        <aside class="bg-white rounded-3xl shadow-lift p-6 lg:sticky lg:top-24">
+            <p class="text-sm text-slate-500">Harga per orang</p>
+            <p class="font-display font-bold text-3xl text-accent mb-5">{{ paket.harga_format_rupiah }}</p>
 
-            <h3 class="font-medium text-sm mb-2">Pilih Jadwal Keberangkatan</h3>
+            {% if jadwal_default %}
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-600">Kuota terisi</span>
+                <span id="kuota-angka" class="font-semibold">{{ jadwal_default.kuota_terisi }}/{{ jadwal_default.kuota_total }}</span>
+            </div>
+            <div class="h-2 rounded-full bg-secondary mt-2 overflow-hidden">
+                <div id="kuota-bar" data-persen="{{ jadwal_default.persen_terisi }}"
+                     class="h-full w-0 rounded-full bg-primary transition-all duration-300"></div>
+            </div>
+            <p id="kuota-sisa" class="text-xs text-accent mt-1.5">Sisa {{ jadwal_default.kuota_tersisa }} kursi lagi!</p>
+            {% endif %}
+
+            <p class="font-medium text-sm mt-5 mb-2">Pilih jadwal keberangkatan</p>
             <div class="space-y-2">
                 {% for jadwal in jadwal_list %}
-                <div class="flex items-center justify-between border border-slate-200 rounded-lg px-3 py-2 text-sm">
-                    <div>
-                        <p>{{ jadwal.tanggal_berangkat|date:"d M Y" }}</p>
-                        {% if jadwal.is_tersedia %}
-                            <span class="text-emerald-600 text-xs">Sisa {{ jadwal.kuota_tersisa }}</span>
-                        {% else %}
-                            <span class="text-red-500 text-xs">Penuh</span>
-                        {% endif %}
-                    </div>
-
+                <label class="jadwal-opsi flex items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 text-sm
+                              {% if jadwal == jadwal_default %}border-primary bg-secondary{% else %}border-slate-200{% endif %}
+                              {% if jadwal.is_tersedia %}cursor-pointer{% else %}opacity-50 cursor-not-allowed{% endif %}">
+                    <span class="flex items-center gap-2.5">
+                        <input type="radio" name="jadwal" value="{{ jadwal.id }}"
+                               data-url="{% url 'buat_booking' jadwal.id %}"
+                               data-total="{{ jadwal.kuota_total }}" data-sisa="{{ jadwal.kuota_tersisa }}"
+                               {% if jadwal == jadwal_default %}checked{% endif %}
+                               {% if not jadwal.is_tersedia %}disabled{% endif %}
+                               class="accent-primary">
+                        {{ jadwal.tanggal_berangkat|date:"d M Y" }}
+                    </span>
                     {% if jadwal.is_tersedia %}
-                        <a href="{% url 'buat_booking' jadwal.id %}"
-                           class="bg-accent text-white text-xs px-4 py-2 rounded-lg font-medium hover:opacity-90">
-                            Pilih
-                        </a>
+                        <span class="{% if jadwal.kuota_tersisa <= 3 %}text-red-500 font-semibold{% else %}text-slate-500{% endif %}">sisa {{ jadwal.kuota_tersisa }}</span>
                     {% else %}
-                        <span class="text-xs text-slate-300">Tidak tersedia</span>
+                        <span class="text-slate-400">penuh</span>
                     {% endif %}
-                </div>
+                </label>
                 {% empty %}
-                <p class="text-slate-400 text-xs">Belum ada jadwal keberangkatan.</p>
+                <p class="text-slate-400 text-sm">Belum ada jadwal keberangkatan.</p>
                 {% endfor %}
             </div>
-        </div>
 
+            {% if jadwal_default %}
+            <a id="tombol-pesan" href="{% url 'buat_booking' jadwal_default.id %}"
+               class="block text-center bg-accent text-white font-semibold py-3 rounded-full mt-5 shadow-soft hover:opacity-90">
+                Pesan Sekarang
+            </a>
+            {% else %}
+            <span class="block text-center bg-slate-200 text-slate-400 font-semibold py-3 rounded-full mt-5">
+                Belum tersedia
+            </span>
+            {% endif %}
+        </aside>
     </div>
 </div>
+
+<script>
+(function () {
+    // ----- ganti foto utama saat thumbnail diklik -----
+    var utama = document.getElementById('foto-utama');
+    var thumbs = document.querySelectorAll('.thumb');
+    thumbs.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (utama) { utama.src = btn.dataset.foto; }
+            thumbs.forEach(function (b) {
+                b.classList.remove('border-accent');
+                b.classList.add('border-transparent');
+            });
+            btn.classList.remove('border-transparent');
+            btn.classList.add('border-accent');
+        });
+    });
+
+    // ----- ganti jadwal: perbarui kuota, tampilan pilihan, dan tujuan tombol -----
+    var radios = document.querySelectorAll('input[name="jadwal"]');
+    var tombol = document.getElementById('tombol-pesan');
+    var angka = document.getElementById('kuota-angka');
+    var bar = document.getElementById('kuota-bar');
+    var sisaTeks = document.getElementById('kuota-sisa');
+
+    // isi bar sesuai persentase awal
+    if (bar) { bar.style.width = bar.dataset.persen + '%'; }
+
+    radios.forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            var total = parseInt(radio.dataset.total, 10);
+            var sisa = parseInt(radio.dataset.sisa, 10);
+            var terisi = total - sisa;
+            if (angka) { angka.textContent = terisi + '/' + total; }
+            if (bar) { bar.style.width = (total ? Math.round(terisi * 100 / total) : 0) + '%'; }
+            if (sisaTeks) { sisaTeks.textContent = 'Sisa ' + sisa + ' kursi lagi!'; }
+            if (tombol) { tombol.href = radio.dataset.url; }
+
+            document.querySelectorAll('.jadwal-opsi').forEach(function (label) {
+                label.classList.remove('border-primary', 'bg-secondary');
+                label.classList.add('border-slate-200');
+            });
+            var label = radio.closest('.jadwal-opsi');
+            label.classList.remove('border-slate-200');
+            label.classList.add('border-primary', 'bg-secondary');
+        });
+    });
+})();
+</script>
 {% endblock %}

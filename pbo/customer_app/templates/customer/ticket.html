@@ -1,54 +1,69 @@
 {% extends "base.html" %}
-{% block title %}E-Tiket - Sistem Pemesanan Perjalanan Wisata{% endblock %}
+{% block title %}E-Tiket - TravelHub{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto px-4 py-12">
+<style>
+    @media print {
+        nav, footer, .no-print { display: none !important; }
+        body { background: #ffffff !important; }
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>
 
-    <div class="bg-white rounded-2xl shadow-lift overflow-hidden">
-        <div class="bg-gradient-to-br from-ocean to-primary text-white p-6 text-center">
-            <p class="text-xs uppercase tracking-wide text-slate-200">E-Tiket</p>
-            <h1 class="font-display text-xl font-bold mt-1">{{ booking.jadwal.paket.nama }}</h1>
-            <p class="text-sm text-slate-200 mt-1">{{ booking.jadwal.tanggal_berangkat|date:"d M Y" }}</p>
+{% with paket=booking.jadwal.paket %}
+<div class="max-w-3xl mx-auto px-4 py-12">
+
+    <div class="bg-white rounded-3xl shadow-lift overflow-hidden">
+
+        {# ----- kepala tiket ----- #}
+        <div class="bg-gradient-to-r from-ocean to-primary text-white px-8 py-6">
+            <p class="text-xs text-white/80">E-TIKET &middot; TravelHub</p>
+            <h1 class="font-display font-bold text-2xl mt-1">{{ paket.nama }}</h1>
+            <p class="text-sm text-white/90 mt-1">
+                {{ paket.destinasi }} &middot; {{ booking.jadwal.tanggal_berangkat|date:"d M Y" }} &middot; {{ paket.durasi_hari }} hari
+            </p>
         </div>
 
-        <div class="p-6 text-center border-b border-dashed border-slate-200">
-            <p class="text-xs text-slate-400 mb-1">Kode Booking</p>
-            <p class="font-mono text-2xl font-bold tracking-widest text-primary">
-                {{ booking.kode_booking }}
-            </p>
-            <p class="text-xs text-slate-400 mt-2">
-                Tunjukkan kode ini kepada admin saat keberangkatan
-            </p>
-        </div>
+        {# ----- isi tiket ----- #}
+        <div class="p-6 grid sm:grid-cols-[1fr_170px] gap-6">
+            <div>
+                <p class="text-xs text-primary">Kode Booking</p>
+                <p class="font-display font-bold text-3xl text-ocean tracking-wide">{{ booking.kode_booking }}</p>
 
-        <div class="p-6 space-y-2 text-sm">
-            <div class="flex justify-between">
-                <span class="text-slate-500">Jumlah Peserta</span>
-                <span class="font-medium">{{ booking.jumlah_peserta }} orang</span>
+                <p class="font-semibold text-sm text-ocean mt-6 mb-2">Peserta</p>
+                <ul class="text-sm divide-y divide-slate-200 border-t border-slate-200">
+                    {% for peserta in booking.peserta.all %}
+                    <li class="flex items-center justify-between py-2">
+                        <span>{{ forloop.counter }}. {{ peserta.nama_lengkap }}</span>
+                        <span class="text-slate-500">{{ peserta.identitas_tersamar }}</span>
+                    </li>
+                    {% empty %}
+                    <li class="py-2 text-slate-400">Data peserta belum diisi.</li>
+                    {% endfor %}
+                </ul>
+
+                {% if paket.meeting_point %}
+                <p class="text-xs text-slate-500 mt-4">Meeting point: {{ paket.meeting_point }}</p>
+                {% endif %}
             </div>
-            <div class="flex justify-between">
-                <span class="text-slate-500">Status</span>
-                <span class="font-medium text-primary">{{ booking.get_status_display }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span class="text-slate-500">Total Dibayar</span>
-                <span class="font-medium">Rp {{ booking.total_harga|floatformat:0 }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span class="text-slate-500">Status Check-in</span>
-                <span class="font-medium">
-                    {% if tiket.sudah_diverifikasi %}
-                        <span class="text-emerald-600">Sudah Check-in</span>
-                    {% else %}
-                        <span class="text-amber-600">Belum Check-in</span>
-                    {% endif %}
-                </span>
+
+            {# ----- tempat QR (placeholder) ----- #}
+            <div class="rounded-2xl border border-dashed border-slate-300 p-4 flex flex-col items-center justify-center text-center">
+                <div class="w-28 h-28 rounded-2xl bg-secondary text-ocean flex items-center justify-center">
+                    <i data-lucide="qr-code" class="w-16 h-16"></i>
+                </div>
+                <p class="text-xs text-slate-500 mt-2">Placeholder QR</p>
             </div>
         </div>
     </div>
 
-    <a href="{% url 'riwayat_booking' %}" class="block text-center text-sm text-primary mt-6">
-        Lihat Riwayat Pemesanan
-    </a>
+    <div class="text-center mt-6 no-print">
+        <button type="button" onclick="window.print()"
+                class="inline-flex items-center gap-2 bg-accent text-white font-semibold px-6 py-2.5 rounded-full shadow-soft hover:opacity-90">
+            <i data-lucide="download" class="w-4 h-4"></i> Unduh PDF
+        </button>
+        <p class="text-xs text-slate-400 mt-2">Pilih "Simpan sebagai PDF" pada jendela cetak.</p>
+    </div>
 </div>
+{% endwith %}
 {% endblock %}

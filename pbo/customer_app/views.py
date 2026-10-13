@@ -1,4 +1,6 @@
 import math
+from datetime import timedelta
+from django.db import transaction
 
 from django.contrib.auth.views import redirect_to_login
 from django.http import JsonResponse
@@ -16,8 +18,7 @@ from django.db.models import Count, Max, Q
 from django.utils.dateparse import parse_date
 
 from .models import User, Paket, Jadwal, Booking, TripPost, TripJoinRequest
-from .forms import RegisterForm, BookingForm, TripPostForm, get_peserta_formset
-
+from .forms import RegisterForm, BookingForm, TripPostForm, PesertaFormSet, get_peserta_formset
 # =========================================================
 # HALAMAN UMUM (TIDAK BUTUH LOGIN)
 # =========================================================
@@ -148,13 +149,20 @@ def daftar_paket(request):
 
 def detail_paket(request, paket_id):
     paket = get_object_or_404(Paket, id=paket_id)
-    itinerary_list = paket.itinerary.all()
-    jadwal_list = paket.jadwal.all()
+
+    # hanya jadwal yang belum lewat; yang pertama masih tersedia dipilih otomatis
+    jadwal_list = paket.jadwal.filter(
+        tanggal_berangkat__gte=timezone.localdate()
+    ).order_by('tanggal_berangkat')
+    jadwal_default = next((j for j in jadwal_list if j.is_tersedia), None)
 
     return render(request, 'customer/tour_detail.html', {
         'paket': paket,
-        'itinerary_list': itinerary_list,
+        'foto_list': paket.daftar_foto()[:5],
+        'fasilitas_list': paket.daftar_fasilitas(),
+        'itinerary_list': paket.itinerary.all(),
         'jadwal_list': jadwal_list,
+        'jadwal_default': jadwal_default,
     })
 
 
@@ -210,37 +218,50 @@ def logout_view(request):
 # BOOKING, PEMBAYARAN, TIKET (BUTUH LOGIN)
 # =========================================================
 
+MAKS_PESERTA = 10
+
+
 @login_required
 def buat_booking(request, jadwal_id):
     """
-    Tahap 1: pengguna pilih jadwal dari halaman detail paket,
-    lalu masukkan jumlah peserta di sini.
-    Kuota langsung dikurangi saat ini juga (supaya tidak dobel booking
-    oleh orang lain), bukan menunggu sampai bayar.
+    Form Pemesanan: jumlah peserta + data tiap peserta dalam satu halaman.
+    Kuota langsung dikurangi saat pesanan dibuat (supaya tidak dobel booking
+    oleh orang lain), dan dikembalikan kalau pesanan dibatalkan.
     """
-    jadwal = get_object_or_404(Jadwal, id=jadwal_id)
+    jadwal = get_object_or_404(Jadwal.objects.select_related('paket'), id=jadwal_id)
+    paket = jadwal.paket
+
+    if jadwal.tanggal_berangkat < timezone.localdate() or not jadwal.is_tersedia:
+        messages.error(request, "Jadwal ini sudah tidak tersedia. Silakan pilih jadwal lain.")
+        return redirect('detail_paket', paket_id=paket.id)
 
     if request.method == 'POST':
-        form = BookingForm(request.POST)
-        if form.is_valid():
-            jumlah = form.cleaned_data['jumlah_peserta']
-
-            if jumlah > jadwal.kuota_tersisa:
-                messages.error(request, f"Kuota tidak mencukupi. Sisa kuota: {jadwal.kuota_tersisa}")
-            else:
-                booking = Booking.objects.create(
-                    user=request.user,
-                    jadwal=jadwal,
-                    jumlah_peserta=jumlah,
-                )
-                jadwal.kurangi_kuota(jumlah)
-                return redirect('isi_peserta', booking_id=booking.id)
+        formset = PesertaFormSet(request.POST, prefix='peserta')
+        if formset.is_valid():
+            jumlah = len(formset.forms)
+            with transaction.atomic():
+                jadwal = Jadwal.objects.select_for_update().get(id=jadwal_id)
+                if jumlah > jadwal.kuota_tersisa:
+                    messages.error(request, f"Kuota tidak mencukupi. Sisa kuota: {jadwal.kuota_tersisa}")
+                else:
+                    booking = Booking.objects.create(
+                        user=request.user, jadwal=jadwal, jumlah_peserta=jumlah,
+                    )
+                    for form in formset:
+                        peserta = form.save(commit=False)
+                        peserta.booking = booking
+                        peserta.save()
+                    jadwal.kurangi_kuota(jumlah)
+                    return redirect('payment', booking_id=booking.id)
     else:
-        form = BookingForm()
+        formset = PesertaFormSet(prefix='peserta')
 
     return render(request, 'customer/booking.html', {
         'jadwal': jadwal,
-        'form': form,
+        'paket': paket,
+        'formset': formset,
+        'maks_peserta': min(MAKS_PESERTA, jadwal.kuota_tersisa),
+        'biaya_layanan': Booking.BIAYA_LAYANAN,
     })
 
 
@@ -269,21 +290,51 @@ def isi_peserta(request, booking_id):
     })
 
 
+# (kode, label, nama ikon lucide)
+METODE_BAYAR = [
+    ('va', 'Virtual Account (BCA, BNI, Mandiri)', 'landmark'),
+    ('qris', 'QRIS', 'qr-code'),
+    ('ewallet', 'E-Wallet (GoPay, OVO, DANA)', 'wallet'),
+    ('kartu', 'Kartu Kredit / Debit', 'credit-card'),
+]
+
+
 @login_required
 def payment(request, booking_id):
     """
-    Tahap 3: ringkasan dan tombol "Konfirmasi Pembayaran" (simulasi,
-    tanpa payment gateway asli).
+    Pembayaran: pilih metode lalu konfirmasi (simulasi, tanpa payment gateway asli).
+    Pesanan dibatalkan otomatis kalau tidak dibayar dalam 24 jam.
     """
-    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    booking = get_object_or_404(
+        Booking.objects.select_related('jadwal', 'jadwal__paket'),
+        id=booking_id, user=request.user,
+    )
+
+    if booking.status == 'paid':
+        return redirect('lihat_tiket', booking_id=booking.id)
+
+    if booking.status != 'unpaid':
+        messages.info(request, "Pesanan ini sudah tidak aktif.")
+        return redirect('riwayat_booking')
+
+    if booking.sudah_kedaluwarsa():
+        booking.batalkan()
+        messages.error(request, "Waktu pembayaran habis, pesanan dibatalkan.")
+        return redirect(f"{reverse('riwayat_booking')}?tab=dibatalkan")
 
     if request.method == 'POST':
-        booking.konfirmasi_pembayaran()
+        metode = request.POST.get('metode')
+        if metode not in dict((kode, label) for kode, label, _ in METODE_BAYAR):
+            metode = 'va'
+        booking.konfirmasi_pembayaran(metode)
         messages.success(request, "Pembayaran berhasil dikonfirmasi!")
         return redirect('lihat_tiket', booking_id=booking.id)
 
     return render(request, 'customer/payment.html', {
         'booking': booking,
+        'paket': booking.jadwal.paket,
+        'metode_list': METODE_BAYAR,
+        'sisa_detik': booking.sisa_detik_bayar(),
     })
 
 
@@ -309,6 +360,11 @@ def riwayat_booking(request):
     tab = request.GET.get('tab', 'aktif')
     if tab not in TAB_RIWAYAT:
         tab = 'aktif'
+
+    # pesanan yang lewat batas waktu bayar dibatalkan otomatis (kuota dikembalikan)
+    batas = timezone.now() - timedelta(hours=Booking.BATAS_BAYAR_JAM)
+    for kedaluwarsa in Booking.objects.filter(user=request.user, status='unpaid', created_at__lt=batas):
+        kedaluwarsa.batalkan()
 
     hari_ini = timezone.localdate()
     semua = (Booking.objects

@@ -11,7 +11,7 @@ Struktur model ini sengaja ditulis untuk menunjukkan penerapan
 4. POLYMORPHISM  -> method get_ringkasan() ada di beberapa class,
                     tapi hasilnya berbeda tergantung class-nya
 """
-
+from datetime import timedelta
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
@@ -53,6 +53,10 @@ class User(AbstractUser):
 # Paket dan TripPost sama-sama "mewarisi" created_at & updated_at
 # dari BaseModel, tidak perlu tulis ulang field itu di masing-masing.
 # =========================================================
+def rupiah(angka):
+    """12500000 -> 'Rp 12.500.000'"""
+    return f"Rp {angka:,.0f}".replace(',', '.')
+
 class Paket(BaseModel):
     KATEGORI_CHOICES = (
         ('pantai', 'Pantai'),
@@ -69,12 +73,23 @@ class Paket(BaseModel):
     deskripsi = models.TextField()
     foto = models.ImageField(upload_to='paket/', blank=True, null=True)
     rating = models.DecimalField(max_digits=2, decimal_places=1, default=4.5)
+    jumlah_ulasan = models.PositiveIntegerField(default=0)
+    fasilitas = models.TextField(blank=True)
+    meeting_point = models.CharField(max_length=200, blank=True)
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
         return self.nama
+
+    def daftar_fasilitas(self):
+        return [baris.strip() for baris in self.fasilitas.splitlines() if baris.strip()]
+
+    def daftar_foto(self):
+        urls = [self.foto.url] if self.foto else []
+        urls += [g.foto.url for g in self.galeri.all() if g.foto]
+        return urls
 
     # ---------- 3. ENCAPSULATION ----------
     # Logic "bagaimana harga ditampilkan" disimpan di dalam class ini,
@@ -94,6 +109,17 @@ class Paket(BaseModel):
     def get_ringkasan(self):
         return f"{self.nama} - {self.destinasi} ({self.durasi_hari} hari)"
 
+class FotoPaket(models.Model):
+    """Foto tambahan (galeri) untuk satu paket wisata."""
+    paket = models.ForeignKey(Paket, on_delete=models.CASCADE, related_name='galeri')
+    foto = models.ImageField(upload_to='paket/galeri/')
+    urutan = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['urutan', 'id']
+
+    def __str__(self):
+        return f"Foto {self.paket.nama} #{self.urutan}"
 
 class Itinerary(BaseModel):
     paket = models.ForeignKey(Paket, on_delete=models.CASCADE, related_name='itinerary')
@@ -124,6 +150,14 @@ class Jadwal(BaseModel):
     def is_tersedia(self):
         return self.kuota_tersisa > 0
 
+    @property
+    def kuota_terisi(self):
+        return max(0, self.kuota_total - self.kuota_tersisa)
+
+    @property
+    def persen_terisi(self):
+        return round(self.kuota_terisi * 100 / self.kuota_total) if self.kuota_total else 0
+
     def kurangi_kuota(self, jumlah):
         if jumlah > self.kuota_tersisa:
             raise ValueError("Kuota tidak mencukupi")
@@ -148,6 +182,10 @@ class Booking(BaseModel):
     jumlah_peserta = models.PositiveIntegerField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unpaid')
     kode_booking = models.CharField(max_length=20, unique=True, blank=True)
+    metode_pembayaran = models.CharField(max_length=10, blank=True)
+
+    BIAYA_LAYANAN = 15000 
+    BATAS_BAYAR_JAM = 24  
 
     def save(self, *args, **kwargs):
         if not self.kode_booking:
@@ -170,8 +208,10 @@ class Booking(BaseModel):
     # ---------- ENCAPSULATION ----------
     # Proses "konfirmasi bayar" jadi satu method, supaya view tinggal
     # panggil booking.konfirmasi_pembayaran(), tidak perlu tahu detailnya.
-    def konfirmasi_pembayaran(self):
+    def konfirmasi_pembayaran(self, metode=''):
         self.status = 'paid'
+        if metode:
+            self.metode_pembayaran = metode
         self.save()
         Tiket.objects.get_or_create(booking=self)
 
@@ -179,18 +219,59 @@ class Booking(BaseModel):
         return self.jadwal.paket.harga * self.jumlah_peserta
 
     def total_harga_rupiah(self):
-        return f"Rp {self.total_harga():,.0f}".replace(',', '.')
+        return rupiah(self.total_harga())
+
+    def total_bayar(self):
+        return self.total_harga() + self.BIAYA_LAYANAN
+
+    def total_bayar_rupiah(self):
+        return rupiah(self.total_bayar())
+
+    def biaya_layanan_rupiah(self):
+        return rupiah(self.BIAYA_LAYANAN)
+
+    # ---------- batas waktu pembayaran ----------
+    @property
+    def batas_bayar(self):
+        return self.created_at + timedelta(hours=self.BATAS_BAYAR_JAM)
+
+    def sisa_detik_bayar(self):
+        return max(0, int((self.batas_bayar - timezone.now()).total_seconds()))
+
+    def sudah_kedaluwarsa(self):
+        return self.status == 'unpaid' and self.sisa_detik_bayar() == 0
+
+    def batalkan(self):
+        """Membatalkan pesanan yang belum dibayar dan mengembalikan kuota."""
+        if self.status == 'unpaid':
+            self.status = 'cancelled'
+            self.save()
+            self.jadwal.tambah_kuota(self.jumlah_peserta)
 
 
 class Peserta(models.Model):
+    JENIS_KELAMIN = (
+        ('L', 'Laki-laki'),
+        ('P', 'Perempuan'),
+    )
+
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='peserta')
     nama_lengkap = models.CharField(max_length=100)
-    no_identitas = models.CharField(max_length=30)
-    umur = models.PositiveSmallIntegerField(null=True, blank=True)
-    kota = models.CharField(max_length=80, blank=True)
+    no_identitas = models.CharField(max_length=30)          # NIK / No. Paspor
+    tanggal_lahir = models.DateField(null=True, blank=True)
+    jenis_kelamin = models.CharField(max_length=1, choices=JENIS_KELAMIN, blank=True)
+    kontak_darurat_nama = models.CharField(max_length=100, blank=True)
+    kontak_darurat_hp = models.CharField(max_length=20, blank=True)
 
     def __str__(self):
         return self.nama_lengkap
+
+    def identitas_tersamar(self):
+        # contoh: 3201123456780001 -> 3201xxxxxxxx0001 (untuk e-tiket)
+        n = self.no_identitas
+        if len(n) <= 8:
+            return n
+        return n[:4] + 'x' * (len(n) - 8) + n[-4:]
 
 
 class Tiket(models.Model):

@@ -1,0 +1,39 @@
+<div class="kartu-peserta bg-white rounded-3xl shadow-soft p-5">
+    <p class="flex items-center gap-2 font-semibold text-ocean mb-4">
+        <i data-lucide="user" class="w-4 h-4 text-primary"></i>
+        Peserta <span class="nomor-peserta">{{ nomor }}</span>
+    </p>
+
+    <div class="grid sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        <div>
+            <label class="block font-medium mb-1.5">{{ form.nama_lengkap.label }}</label>
+            {{ form.nama_lengkap }}
+            {% if form.nama_lengkap.errors %}<p class="text-red-500 text-xs mt-1">{{ form.nama_lengkap.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+            <label class="block font-medium mb-1.5">{{ form.no_identitas.label }}</label>
+            {{ form.no_identitas }}
+            {% if form.no_identitas.errors %}<p class="text-red-500 text-xs mt-1">{{ form.no_identitas.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+            <label class="block font-medium mb-1.5">{{ form.tanggal_lahir.label }}</label>
+            {{ form.tanggal_lahir }}
+            {% if form.tanggal_lahir.errors %}<p class="text-red-500 text-xs mt-1">{{ form.tanggal_lahir.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+            <label class="block font-medium mb-1.5">{{ form.jenis_kelamin.label }}</label>
+            {{ form.jenis_kelamin }}
+            {% if form.jenis_kelamin.errors %}<p class="text-red-500 text-xs mt-1">{{ form.jenis_kelamin.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+            <label class="block font-medium mb-1.5">{{ form.kontak_darurat_nama.label }}</label>
+            {{ form.kontak_darurat_nama }}
+            {% if form.kontak_darurat_nama.errors %}<p class="text-red-500 text-xs mt-1">{{ form.kontak_darurat_nama.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+            <label class="block font-medium mb-1.5">{{ form.kontak_darurat_hp.label }}</label>
+            {{ form.kontak_darurat_hp }}
+            {% if form.kontak_darurat_hp.errors %}<p class="text-red-500 text-xs mt-1">{{ form.kontak_darurat_hp.errors|striptags }}</p>{% endif %}
+        </div>
+    </div>
+</div>
