@@ -16,8 +16,9 @@
             <p class="font-mono text-2xl font-bold tracking-widest text-primary">
                 {{ booking.kode_booking }}
             </p>
+            <div id="qrcode" class="flex justify-center mt-4"></div>
             <p class="text-xs text-slate-400 mt-2">
-                Tunjukkan kode ini kepada admin saat keberangkatan
+                Tunjukkan kode / QR ini kepada admin saat keberangkatan
             </p>
         </div>
 
@@ -51,4 +52,8 @@
         Lihat Riwayat Pemesanan
     </a>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+    new QRCode(document.getElementById('qrcode'), {text: '{{ booking.kode_booking }}', width: 150, height: 150});
+</script>
 {% endblock %}

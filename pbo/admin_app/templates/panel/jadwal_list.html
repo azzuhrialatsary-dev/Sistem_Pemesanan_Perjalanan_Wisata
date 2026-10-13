@@ -1,0 +1,61 @@
+{% extends "panel/base.html" %}
+{% block title %}Jadwal & Kuota{% endblock %}
+{% block page_title %}Jadwal &amp; Kuota{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 class="text-xl font-bold text-slate-800">Manajemen Jadwal Keberangkatan</h2>
+        <div class="flex gap-2">
+            <form method="get">
+                <select name="paket" onchange="this.form.submit()" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white outline-none focus:border-brand-500">
+                    <option value="">Semua Paket</option>
+                    {% for p in paket_list %}<option value="{{ p.id }}" {% if paket_dipilih == p.id|stringformat:"d" %}selected{% endif %}>{{ p.nama }}</option>{% endfor %}
+                </select>
+            </form>
+            <a href="{% url 'panel_jadwal_tambah' %}" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm">
+                <i class="fa-solid fa-calendar-plus mr-1"></i> Set Jadwal
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-slate-600">
+                <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-4 font-semibold">Nama Paket</th>
+                        <th class="px-6 py-4 font-semibold">Tgl Keberangkatan</th>
+                        <th class="px-6 py-4 font-semibold text-center">Kuota Total</th>
+                        <th class="px-6 py-4 font-semibold text-center">Terisi</th>
+                        <th class="px-6 py-4 font-semibold text-center">Sisa</th>
+                        <th class="px-6 py-4 font-semibold text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for j in page_obj %}
+                    <tr class="hover:bg-slate-50/50">
+                        <td class="px-6 py-4 font-medium text-slate-900">{{ j.paket.nama }}</td>
+                        <td class="px-6 py-4">{{ j.tanggal_berangkat|date:"d M Y" }}
+                            {% if j.tanggal_berangkat < hari_ini %}<span class="ml-1 text-xs text-slate-400">(lewat)</span>{% endif %}</td>
+                        <td class="px-6 py-4 text-center">{{ j.kuota_total }}</td>
+                        <td class="px-6 py-4 text-center font-medium text-brand-600">{{ j.terisi }}</td>
+                        <td class="px-6 py-4 text-center font-bold {% if j.kuota_tersisa == 0 %}text-rose-500{% elif j.kuota_tersisa <= 5 %}text-amber-500{% else %}text-emerald-500{% endif %}">{{ j.kuota_tersisa }}</td>
+                        <td class="px-6 py-4 text-center whitespace-nowrap">
+                            <a href="{% url 'panel_jadwal_edit' j.id %}" class="text-blue-500 hover:text-blue-700 mx-1" title="Atur kuota"><i class="fa-solid fa-gear"></i></a>
+                            <form method="post" action="{% url 'panel_jadwal_hapus' j.id %}" class="inline" onsubmit="return confirm('Hapus jadwal ini?')">
+                                {% csrf_token %}
+                                <button class="text-rose-500 hover:text-rose-700 mx-1" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="px-6 py-10 text-center text-slate-400">Belum ada jadwal.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "panel/_pagination.html" %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "panel/base.html" %}
+{% block title %}{{ b.kode_booking }}{% endblock %}
+{% block page_title %}Detail Pesanan{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <a href="{% url 'panel_pesanan' %}" class="text-sm text-slate-500 hover:text-brand-600"><i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke daftar</a>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <p class="text-xs text-slate-400">Kode Booking</p>
+                <h2 class="text-2xl font-bold text-slate-800 font-mono">{{ b.kode_booking }}</h2>
+            </div>
+            {% include "panel/_status.html" with status=b.status label=b.get_status_display %}
+        </div>
+
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+            <div><dt class="text-slate-400">Pelanggan</dt><dd class="font-medium">{{ b.user.get_full_name|default:b.user.username }}</dd></div>
+            <div><dt class="text-slate-400">Email / No HP</dt><dd class="font-medium">{{ b.user.email|default:"-" }} / {{ b.user.no_hp|default:"-" }}</dd></div>
+            <div><dt class="text-slate-400">Paket</dt><dd class="font-medium">{{ b.jadwal.paket.nama }}</dd></div>
+            <div><dt class="text-slate-400">Tgl Berangkat</dt><dd class="font-medium">{{ b.jadwal.tanggal_berangkat|date:"d M Y" }}</dd></div>
+            <div><dt class="text-slate-400">Jumlah Peserta</dt><dd class="font-medium">{{ b.jumlah_peserta }} orang</dd></div>
+            <div><dt class="text-slate-400">Total</dt><dd class="font-bold text-brand-600">{{ b.total_harga_rupiah }}</dd></div>
+            <div><dt class="text-slate-400">Tgl Pesan</dt><dd class="font-medium">{{ b.created_at|date:"d M Y H:i" }}</dd></div>
+            <div><dt class="text-slate-400">Check-in</dt>
+                <dd class="font-medium">{% if tiket.sudah_diverifikasi %}<span class="text-emerald-600">Sudah check-in</span>{% elif tiket %}<span class="text-amber-600">Belum check-in</span>{% else %}-{% endif %}</dd></div>
+        </dl>
+
+        <div class="flex flex-wrap gap-3 mt-8 pt-6 border-t border-slate-100">
+            {% if b.status == 'unpaid' %}
+            <form method="post" action="{% url 'panel_pesanan_aksi' b.id %}">{% csrf_token %}<input type="hidden" name="aksi" value="bayar">
+                <button class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold"><i class="fa-solid fa-check mr-1"></i> Konfirmasi Lunas</button></form>
+            {% endif %}
+            {% if b.status == 'paid' %}
+            <form method="post" action="{% url 'panel_pesanan_aksi' b.id %}">{% csrf_token %}<input type="hidden" name="aksi" value="selesai">
+                <button class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold"><i class="fa-solid fa-flag-checkered mr-1"></i> Tandai Selesai</button></form>
+            {% endif %}
+            {% if b.status == 'unpaid' or b.status == 'paid' %}
+            <form method="post" action="{% url 'panel_pesanan_aksi' b.id %}" onsubmit="return confirm('Batalkan pesanan ini? Kuota akan dikembalikan.')">{% csrf_token %}<input type="hidden" name="aksi" value="batal">
+                <button class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-4 py-2 rounded-lg text-sm font-semibold border border-rose-100"><i class="fa-solid fa-ban mr-1"></i> Batalkan</button></form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">Data Peserta</h3>
+        <table class="w-full text-sm text-left text-slate-600">
+            <thead class="text-xs text-slate-500 uppercase bg-slate-50"><tr>
+                <th class="px-4 py-3">Nama</th><th class="px-4 py-3">No Identitas</th><th class="px-4 py-3">Umur</th><th class="px-4 py-3">Kota</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for p in peserta_list %}
+                <tr><td class="px-4 py-3 font-medium text-slate-800">{{ p.nama_lengkap }}</td><td class="px-4 py-3">{{ p.no_identitas }}</td><td class="px-4 py-3">{{ p.umur|default:"-" }}</td><td class="px-4 py-3">{{ p.kota|default:"-" }}</td></tr>
+                {% empty %}<tr><td colspan="4" class="px-4 py-6 text-center text-slate-400">Peserta belum diisi.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "panel/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard Statistik{% endblock %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl"><i class="fa-solid fa-wallet"></i></div>
+            <div><p class="text-sm text-slate-500 font-medium">Total Pendapatan</p><h3 class="text-2xl font-bold text-slate-800">{{ pendapatan }}</h3></div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl"><i class="fa-solid fa-ticket"></i></div>
+            <div><p class="text-sm text-slate-500 font-medium">Total Pemesanan</p><h3 class="text-2xl font-bold text-slate-800">{{ total_pesanan }}</h3></div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl"><i class="fa-solid fa-box-open"></i></div>
+            <div><p class="text-sm text-slate-500 font-medium">Paket Aktif</p><h3 class="text-2xl font-bold text-slate-800">{{ paket_aktif }}</h3></div>
+        </div>
+        <a href="{% url 'panel_pesanan' %}?status=unpaid" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center gap-4 hover:border-rose-200">
+            <div class="w-14 h-14 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-2xl"><i class="fa-regular fa-clock"></i></div>
+            <div><p class="text-sm text-slate-500 font-medium">Belum Bayar</p><h3 class="text-2xl font-bold text-slate-800">{{ belum_bayar }}</h3></div>
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-slate-800">Tren Pemesanan</h3>
+            <select onchange="location.href='?rentang='+this.value" class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 text-slate-600 bg-slate-50">
+                <option value="7" {% if rentang == 7 %}selected{% endif %}>7 Hari Terakhir</option>
+                <option value="30" {% if rentang == 30 %}selected{% endif %}>30 Hari Terakhir</option>
+            </select>
+        </div>
+        <div class="relative h-[300px] w-full"><canvas id="trendChart"></canvas></div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Pesanan Terbaru</h3>
+                <a href="{% url 'panel_pesanan' %}" class="text-sm text-brand-600 hover:underline">Lihat semua</a>
+            </div>
+            <div class="divide-y divide-slate-100">
+                {% for b in terbaru %}
+                <a href="{% url 'panel_pesanan_detail' b.id %}" class="flex items-center justify-between py-3 hover:bg-slate-50/50">
+                    <div>
+                        <p class="font-medium text-slate-800 text-sm">{{ b.kode_booking }} &middot; {{ b.user.get_full_name|default:b.user.username }}</p>
+                        <p class="text-xs text-slate-400">{{ b.jadwal.paket.nama }}</p>
+                    </div>
+                    {% include "panel/_status.html" with status=b.status label=b.get_status_display %}
+                </a>
+                {% empty %}<p class="text-sm text-slate-400 py-4">Belum ada pesanan.</p>{% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Kuota Hampir Habis</h3>
+                <a href="{% url 'panel_jadwal' %}" class="text-sm text-brand-600 hover:underline">Kelola jadwal</a>
+            </div>
+            <div class="divide-y divide-slate-100">
+                {% for j in hampir_penuh %}
+                <div class="flex items-center justify-between py-3">
+                    <div>
+                        <p class="font-medium text-slate-800 text-sm">{{ j.paket.nama }}</p>
+                        <p class="text-xs text-slate-400">{{ j.tanggal_berangkat|date:"d M Y" }}</p>
+                    </div>
+                    <span class="font-bold {% if j.kuota_tersisa == 0 %}text-rose-500{% else %}text-amber-500{% endif %}">
+                        {% if j.kuota_tersisa == 0 %}Penuh{% else %}Sisa {{ j.kuota_tersisa }}{% endif %}
+                    </span>
+                </div>
+                {% empty %}<p class="text-sm text-slate-400 py-4">Semua jadwal masih aman.</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_data|json_script:"chart-data" }}
+<script>
+    const labels = JSON.parse(document.getElementById('chart-labels').textContent);
+    const data = JSON.parse(document.getElementById('chart-data').textContent);
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(99,102,241,0.5)');
+    gradient.addColorStop(1, 'rgba(99,102,241,0.0)');
+    new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [{
+            label: 'Pemesanan', data, borderColor: '#6366f1', backgroundColor: gradient,
+            borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: '#6366f1',
+            pointBorderWidth: 2, pointRadius: 4, fill: true, tension: 0.4
+        }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0, color: '#64748b' }, grid: { color: '#f1f5f9' } },
+                x: { grid: { display: false }, ticks: { color: '#64748b' } }
+            },
+            interaction: { intersect: false, mode: 'index' }
+        }
+    });
+</script>
+{% endblock %}
