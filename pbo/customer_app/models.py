@@ -1,15 +1,20 @@
 """
 customer_app/models.py
 
-Struktur model ini sengaja ditulis untuk menunjukkan penerapan
-4 Pilar OOP secara eksplisit, supaya mudah dijelaskan saat presentasi.
-
-1. ABSTRACTION  -> BaseModel (class dasar, tidak pernah dipakai langsung)
-2. INHERITANCE  -> Paket dan TripPost sama-sama mewarisi BaseModel
+1. ABSTRACTION   -> BaseModel (abstract = True, tanpa tabel sendiri) + kontrak
+                    get_ringkasan() lewat NotImplementedError
+2. INHERITANCE   -> Paket, Itinerary, Jadwal, Booking, TripPost, dan
+                    TripJoinRequest mewarisi BaseModel (created_at & updated_at)
 3. ENCAPSULATION -> logic terkait data disimpan sebagai method di dalam class,
-                    bukan tersebar di views.py (misal kurangi_kuota())
-4. POLYMORPHISM  -> method get_ringkasan() ada di beberapa class,
-                    tapi hasilnya berbeda tergantung class-nya
+                    bukan tersebar di views.py.
+                    public    : kurangi_kuota(), terima(), konfirmasi_pembayaran(), dst.
+                    protected : _buat_kode(), _BIAYA_LAYANAN, _BATAS_BAYAR_JAM
+                    private   : __cukup() di Jadwal, __kuota_penuh() di TripJoinRequest
+4. POLYMORPHISM  -> get_ringkasan() di-override di 6 class (method overriding),
+                    dipanggil seragam tanpa peduli class-nya (duck typing).
+                    __str__() juga di-override di hampir semua class.
+
+Catatan: di Python, "_" dan "__" adalah konvensi penamaan, bukan larangan mutlak.
 """
 from datetime import timedelta
 from django.db import models
@@ -21,7 +26,8 @@ import uuid
 # =========================================================
 # 1. ABSTRACTION
 # Class dasar ini TIDAK membuat tabel sendiri di database.
-# Dia cuma jadi "cetakan" field yang dipakai berulang.
+# Dia jadi "cetakan" field yang dipakai berulang, sekaligus
+# menetapkan KONTRAK method yang wajib dimiliki semua turunan.
 # =========================================================
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -29,6 +35,17 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True  # <- ini kunci dari abstraction di Django
+
+    def get_ringkasan(self):
+        """
+        Kontrak: setiap turunan WAJIB meng-override method ini.
+        (Django punya metaclass sendiri sehingga ABC/@abstractmethod
+        menyebabkan metaclass conflict; NotImplementedError adalah
+        padanannya.)
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} harus mengimplementasikan get_ringkasan()"
+        )
 
 
 # =========================================================
@@ -50,12 +67,14 @@ class User(AbstractUser):
 
 # =========================================================
 # 2. INHERITANCE
-# Paket dan TripPost sama-sama "mewarisi" created_at & updated_at
-# dari BaseModel, tidak perlu tulis ulang field itu di masing-masing.
+# Paket, Itinerary, Jadwal, Booking, TripPost, dan TripJoinRequest
+# sama-sama "mewarisi" created_at & updated_at dari BaseModel,
+# tidak perlu tulis ulang field itu di masing-masing.
 # =========================================================
 def rupiah(angka):
     """12500000 -> 'Rp 12.500.000'"""
     return f"Rp {angka:,.0f}".replace(',', '.')
+
 
 class Paket(BaseModel):
     KATEGORI_CHOICES = (
@@ -95,7 +114,7 @@ class Paket(BaseModel):
     # Logic "bagaimana harga ditampilkan" disimpan di dalam class ini,
     # bukan ditulis ulang manual tiap kali di template/views.
     def harga_format_rupiah(self):
-        return f"Rp {self.harga:,.0f}".replace(',', '.')
+        return rupiah(self.harga)
 
     def sisa_kursi(self):
         total = self.jadwal.filter(
@@ -103,11 +122,11 @@ class Paket(BaseModel):
         ).aggregate(total=models.Sum('kuota_tersisa'))['total']
         return total or 0
 
-    # ---------- 4. POLYMORPHISM ----------
-    # Method dengan nama sama (get_ringkasan) ada juga di class TripPost
-    # di bawah, tapi isinya beda. Inilah polymorphism.
+    # ---------- 4. POLYMORPHISM (method overriding) ----------
+    # Meng-override get_ringkasan() milik BaseModel.
     def get_ringkasan(self):
         return f"{self.nama} - {self.destinasi} ({self.durasi_hari} hari)"
+
 
 class FotoPaket(models.Model):
     """Foto tambahan (galeri) untuk satu paket wisata."""
@@ -121,6 +140,7 @@ class FotoPaket(models.Model):
     def __str__(self):
         return f"Foto {self.paket.nama} #{self.urutan}"
 
+
 class Itinerary(BaseModel):
     paket = models.ForeignKey(Paket, on_delete=models.CASCADE, related_name='itinerary')
     hari_ke = models.PositiveIntegerField()
@@ -131,6 +151,10 @@ class Itinerary(BaseModel):
         ordering = ['hari_ke']
 
     def __str__(self):
+        return f"Hari {self.hari_ke}: {self.judul_kegiatan}"
+
+    # ---------- POLYMORPHISM ----------
+    def get_ringkasan(self):
         return f"Hari {self.hari_ke}: {self.judul_kegiatan}"
 
 
@@ -158,8 +182,13 @@ class Jadwal(BaseModel):
     def persen_terisi(self):
         return round(self.kuota_terisi * 100 / self.kuota_total) if self.kuota_total else 0
 
+    # private: pengecekan kuota hanya urusan internal class ini
+    def __cukup(self, jumlah):
+        return jumlah <= self.kuota_tersisa
+
+    # public: antarmuka yang dipanggil dari views
     def kurangi_kuota(self, jumlah):
-        if jumlah > self.kuota_tersisa:
+        if not self.__cukup(jumlah):
             raise ValueError("Kuota tidak mencukupi")
         self.kuota_tersisa -= jumlah
         self.save()
@@ -167,6 +196,10 @@ class Jadwal(BaseModel):
     def tambah_kuota(self, jumlah):
         self.kuota_tersisa = min(self.kuota_total, self.kuota_tersisa + jumlah)
         self.save()
+
+    # ---------- POLYMORPHISM ----------
+    def get_ringkasan(self):
+        return f"{self.paket.nama} berangkat {self.tanggal_berangkat} (sisa {self.kuota_tersisa})"
 
 
 class Booking(BaseModel):
@@ -184,14 +217,16 @@ class Booking(BaseModel):
     kode_booking = models.CharField(max_length=20, unique=True, blank=True)
     metode_pembayaran = models.CharField(max_length=10, blank=True)
 
-    BIAYA_LAYANAN = 15000 
-    BATAS_BAYAR_JAM = 24  
+    # protected: konstanta internal, tidak untuk diubah dari luar class
+    _BIAYA_LAYANAN = 15000
+    _BATAS_BAYAR_JAM = 24
 
     def save(self, *args, **kwargs):
         if not self.kode_booking:
             self.kode_booking = self._buat_kode()
         super().save(*args, **kwargs)
 
+    # protected: hanya dipakai di dalam class lewat save()
     def _buat_kode(self):
         # contoh hasil: TH-2611-0042 (tahun+bulan keberangkatan, lalu nomor urut)
         tgl = self.jadwal.tanggal_berangkat
@@ -222,18 +257,18 @@ class Booking(BaseModel):
         return rupiah(self.total_harga())
 
     def total_bayar(self):
-        return self.total_harga() + self.BIAYA_LAYANAN
+        return self.total_harga() + self._BIAYA_LAYANAN
 
     def total_bayar_rupiah(self):
         return rupiah(self.total_bayar())
 
     def biaya_layanan_rupiah(self):
-        return rupiah(self.BIAYA_LAYANAN)
+        return rupiah(self._BIAYA_LAYANAN)
 
     # ---------- batas waktu pembayaran ----------
     @property
     def batas_bayar(self):
-        return self.created_at + timedelta(hours=self.BATAS_BAYAR_JAM)
+        return self.created_at + timedelta(hours=self._BATAS_BAYAR_JAM)
 
     def sisa_detik_bayar(self):
         return max(0, int((self.batas_bayar - timezone.now()).total_seconds()))
@@ -247,6 +282,10 @@ class Booking(BaseModel):
             self.status = 'cancelled'
             self.save()
             self.jadwal.tambah_kuota(self.jumlah_peserta)
+
+    # ---------- POLYMORPHISM ----------
+    def get_ringkasan(self):
+        return f"{self.kode_booking}: {self.jumlah_peserta} peserta ({self.get_status_display()})"
 
 
 class Peserta(models.Model):
@@ -296,7 +335,7 @@ class Tiket(models.Model):
 # TRIP MATCHMAKER (fitur unik)
 # =========================================================
 BULAN_SINGKAT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-                'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+                 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 
 
 class TripPost(BaseModel):
@@ -314,9 +353,9 @@ class TripPost(BaseModel):
     def __str__(self):
         return self.judul
 
-    # ---------- POLYMORPHISM ----------
-    # Nama method sama persis dengan milik Paket (get_ringkasan),
-    # tapi isinya berbeda karena konteksnya beda (trip buatan user, bukan paket resmi).
+    # ---------- POLYMORPHISM (method overriding) ----------
+    # Nama method sama dengan milik BaseModel dan Paket, tapi isinya berbeda
+    # karena konteksnya beda (trip buatan user, bukan paket resmi).
     def get_ringkasan(self):
         return f"{self.judul} ke {self.destinasi} pada {self.tanggal_berangkat}"
 
@@ -344,7 +383,7 @@ class TripPost(BaseModel):
         return f"{a.day} {bln_a} {a.year} – {b.day} {bln_b} {b.year}"
 
     def budget_format_rupiah(self):
-        return f"Rp {self.budget:,.0f}".replace(',', '.')
+        return rupiah(self.budget)
 
     def daftar_tags(self):
         return [t.strip() for t in self.tags.split(',') if t.strip()]
@@ -372,8 +411,13 @@ class TripJoinRequest(BaseModel):
         return f"{self.user} -> {self.trip_post} ({self.status})"
 
     # ---------- ENCAPSULATION ----------
+    # private: pengecekan kuota disembunyikan di dalam class
+    def __kuota_penuh(self):
+        return self.trip_post.sisa_kuota_teman() <= 0
+
+    # public: antarmuka yang dipanggil dari views
     def terima(self):
-        if self.trip_post.sisa_kuota_teman() <= 0:
+        if self.__kuota_penuh():
             raise ValueError("Kuota trip sudah penuh")
         self.status = 'approved'
         self.save()
@@ -381,3 +425,7 @@ class TripJoinRequest(BaseModel):
     def tolak(self):
         self.status = 'rejected'
         self.save()
+
+    # ---------- POLYMORPHISM ----------
+    def get_ringkasan(self):
+        return f"{self.user} minta gabung ke {self.trip_post.judul} ({self.get_status_display()})"
