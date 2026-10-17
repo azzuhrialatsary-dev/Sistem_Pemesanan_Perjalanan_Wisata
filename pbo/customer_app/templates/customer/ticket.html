@@ -25,7 +25,7 @@
         </div>
 
         {# ----- isi tiket ----- #}
-        <div class="p-6 grid sm:grid-cols-[1fr_170px] gap-6">
+        <div class="p-6 grid sm:grid-cols-[1fr_190px] gap-6">
             <div>
                 <p class="text-xs text-primary">Kode Booking</p>
                 <p class="font-display font-bold text-3xl text-ocean tracking-wide">{{ booking.kode_booking }}</p>
@@ -47,12 +47,20 @@
                 {% endif %}
             </div>
 
-            {# ----- tempat QR (placeholder) ----- #}
+            {# ----- QR Code (dipindai admin saat check-in) ----- #}
             <div class="rounded-2xl border border-dashed border-slate-300 p-4 flex flex-col items-center justify-center text-center">
-                <div class="w-28 h-28 rounded-2xl bg-secondary text-ocean flex items-center justify-center">
-                    <i data-lucide="qr-code" class="w-16 h-16"></i>
-                </div>
-                <p class="text-xs text-slate-500 mt-2">Placeholder QR</p>
+                {% with qr=tiket.qr_data_uri %}
+                {% if qr %}
+                    <img src="{{ qr }}" alt="QR Code {{ booking.kode_booking }}"
+                        class="w-36 h-36 bg-white rounded-lg" style="image-rendering: pixelated;">
+                    <p class="text-xs text-slate-500 mt-2">Tunjukkan QR ini ke petugas</p>
+                {% else %}
+                    <div class="w-28 h-28 rounded-2xl bg-secondary text-ocean flex items-center justify-center">
+                        <i data-lucide="qr-code" class="w-16 h-16"></i>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">QR belum tersedia</p>
+                {% endif %}
+                {% endwith %}
             </div>
         </div>
     </div>
