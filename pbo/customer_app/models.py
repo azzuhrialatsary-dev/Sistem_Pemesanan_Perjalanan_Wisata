@@ -349,6 +349,23 @@ class Tiket(models.Model):
         self.sudah_diverifikasi = True
         self.save()
 
+        # ---------- QR Code untuk e-tiket ----------
+    def qr_data_uri(self):
+        """
+        QR Code berisi kode booking, dalam bentuk data URI supaya bisa langsung
+        dipasang di <img>. Kosong kalau library 'qrcode' belum terpasang.
+        """
+        try:
+            import base64
+            from io import BytesIO
+            import qrcode
+        except ImportError:
+            return ''
+        gambar = qrcode.make(self.booking.kode_booking, box_size=10, border=2)
+        buf = BytesIO()
+        gambar.save(buf)
+        return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+
 
 # =========================================================
 # TRIP MATCHMAKER (fitur unik)
