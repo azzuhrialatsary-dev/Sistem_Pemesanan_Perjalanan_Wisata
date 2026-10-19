@@ -1,0 +1,125 @@
+{# Widget chatbot TravelHub: tombol melayang kanan bawah #}
+<div id="th-chat" class="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3">
+
+    <div id="th-chat-panel" class="hidden w-[calc(100vw-2.5rem)] sm:w-96 h-[32rem] max-h-[75vh] bg-white rounded-2xl shadow-lift border border-slate-200 flex flex-col overflow-hidden">
+        <div class="bg-primary text-white px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <span class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+                    <i data-lucide="bot" class="w-5 h-5"></i>
+                </span>
+                <div>
+                    <p class="font-display font-semibold text-sm leading-tight">Asisten TravelHub</p>
+                    <p class="text-xs text-white/80">Siap membantu liburan Anda</p>
+                </div>
+            </div>
+            <button type="button" id="th-chat-close" aria-label="Tutup chat" class="p-1 rounded-full hover:bg-white/20">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div id="th-chat-log" class="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-surface text-sm"></div>
+
+        <form id="th-chat-form" class="border-t border-slate-200 p-3 flex items-center gap-2 bg-white">
+            <input id="th-chat-input" type="text" autocomplete="off" maxlength="500"
+                   placeholder="Tulis pesan..."
+                   class="flex-1 rounded-full border border-slate-300 px-4 py-2 text-sm focus:outline-none focus:border-primary">
+            <button type="submit" id="th-chat-send" aria-label="Kirim"
+                    class="w-10 h-10 shrink-0 rounded-full bg-accent text-white flex items-center justify-center hover:opacity-90 disabled:opacity-50">
+                <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+        </form>
+    </div>
+
+    <button type="button" id="th-chat-toggle" aria-label="Buka chat"
+            class="w-14 h-14 rounded-full bg-primary text-white shadow-lift flex items-center justify-center hover:scale-105 transition">
+        <i data-lucide="message-circle" class="w-6 h-6"></i>
+    </button>
+</div>
+
+<script>
+(function () {
+    var API = "{% url 'chatbot_api' %}";
+    var CSRF = "{{ csrf_token }}";
+    var GREETING = "Halo! Selamat datang di TravelHub. Ada yang bisa saya bantu untuk rencana liburan Anda hari ini?";
+    var KEY = 'th_chat_history';
+
+    var panel = document.getElementById('th-chat-panel');
+    var log = document.getElementById('th-chat-log');
+    var form = document.getElementById('th-chat-form');
+    var input = document.getElementById('th-chat-input');
+    var send = document.getElementById('th-chat-send');
+    var history = [];
+
+    try { history = JSON.parse(sessionStorage.getItem(KEY)) || []; } catch (e) { history = []; }
+
+    function save() {
+        try { sessionStorage.setItem(KEY, JSON.stringify(history.slice(-30))); } catch (e) {}
+    }
+
+    function addBubble(role, text) {
+        var wrap = document.createElement('div');
+        wrap.className = 'flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
+        var b = document.createElement('div');
+        b.className = 'max-w-[85%] px-3.5 py-2 rounded-2xl whitespace-pre-line leading-relaxed ' +
+            (role === 'user' ? 'bg-primary text-white rounded-br-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-bl-sm');
+        b.textContent = text;
+        wrap.appendChild(b);
+        log.appendChild(wrap);
+        log.scrollTop = log.scrollHeight;
+        return wrap;
+    }
+
+    function render() {
+        log.innerHTML = '';
+        addBubble('assistant', GREETING);
+        history.forEach(function (m) { addBubble(m.role, m.content); });
+    }
+
+    function openChat() {
+        panel.classList.remove('hidden');
+        input.focus();
+        log.scrollTop = log.scrollHeight;
+    }
+
+    document.getElementById('th-chat-toggle').addEventListener('click', function () {
+        panel.classList.contains('hidden') ? openChat() : panel.classList.add('hidden');
+    });
+    document.getElementById('th-chat-close').addEventListener('click', function () {
+        panel.classList.add('hidden');
+    });
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var text = input.value.trim();
+        if (!text || send.disabled) return;
+
+        input.value = '';
+        history.push({ role: 'user', content: text });
+        addBubble('user', text);
+        save();
+
+        send.disabled = true;
+        var typing = addBubble('assistant', 'Mengetik...');
+
+        fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ messages: history })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { return d.reply || 'Maaf, terjadi kendala. Silakan coba lagi.'; })
+        .catch(function () { return 'Maaf, koneksi bermasalah. Silakan coba lagi.'; })
+        .then(function (reply) {
+            typing.remove();
+            history.push({ role: 'assistant', content: reply });
+            addBubble('assistant', reply);
+            save();
+            send.disabled = false;
+            input.focus();
+        });
+    });
+
+    render();
+    if (window.lucide) lucide.createIcons();
+})();
+</script>

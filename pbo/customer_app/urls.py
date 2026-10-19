@@ -7,6 +7,9 @@ urlpatterns = [
     path('paket/', views.daftar_paket, name='daftar_paket'),
     path('paket/<int:paket_id>/', views.detail_paket, name='detail_paket'),
 
+    # Chatbot
+    path('chatbot/api/', views.chatbot_api, name='chatbot_api'),
+
     # Autentikasi
     path('register/', views.register_view, name='register'),
     path('login/', views.login_view, name='login'),
