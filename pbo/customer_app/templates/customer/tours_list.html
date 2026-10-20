@@ -12,7 +12,7 @@
 </section>
 
 <form method="get" id="filter-form"
-      class="max-w-6xl mx-auto px-4 py-10 grid lg:grid-cols-[260px_1fr] gap-8 items-start">
+    class="max-w-6xl mx-auto px-4 py-10 grid lg:grid-cols-[240px_1fr] gap-6 items-start">
 
     {# ===== Sidebar filter ===== #}
     <aside class="bg-white rounded-3xl shadow-soft p-5 space-y-5 text-sm lg:sticky lg:top-24">
@@ -32,9 +32,9 @@
             <label class="block font-semibold mb-2">Tanggal keberangkatan</label>
             <div class="grid grid-cols-2 gap-2">
                 <input type="date" name="tanggal_dari" value="{{ tanggal_dari }}" onchange="this.form.submit()"
-                       class="min-w-0 border border-slate-200 rounded-full px-3 py-1.5 text-xs outline-none focus:border-primary">
+                    class="min-w-0 border border-slate-200 rounded-full px-3 py-1.5 text-xs outline-none focus:border-primary">
                 <input type="date" name="tanggal_sampai" value="{{ tanggal_sampai }}" onchange="this.form.submit()"
-                       class="min-w-0 border border-slate-200 rounded-full px-3 py-1.5 text-xs outline-none focus:border-primary">
+                    class="min-w-0 border border-slate-200 rounded-full px-3 py-1.5 text-xs outline-none focus:border-primary">
             </div>
         </div>
 
@@ -43,9 +43,9 @@
                 Durasi maks: <span id="durasi-label">{{ durasi_maks }}</span> hari
             </label>
             <input type="range" name="durasi_maks" min="1" max="{{ durasi_max_db }}" step="1" value="{{ durasi_maks }}"
-                   class="w-full accent-primary"
-                   oninput="document.getElementById('durasi-label').textContent = this.value"
-                   onchange="this.form.submit()">
+                class="w-full accent-primary"
+                oninput="document.getElementById('durasi-label').textContent = this.value"
+                onchange="this.form.submit()">
         </div>
 
         <div>
@@ -53,9 +53,9 @@
                 Harga maks: Rp <span id="harga-label">{{ harga_maks_label }}</span>
             </label>
             <input type="range" name="harga_maks" min="0" max="{{ harga_max_db }}" step="100000" value="{{ harga_maks }}"
-                   class="w-full accent-primary"
-                   oninput="document.getElementById('harga-label').textContent = Number(this.value).toLocaleString('id-ID')"
-                   onchange="this.form.submit()">
+                class="w-full accent-primary"
+                oninput="document.getElementById('harga-label').textContent = Number(this.value).toLocaleString('id-ID')"
+                onchange="this.form.submit()">
         </div>
 
         <div>
@@ -64,9 +64,9 @@
                 {% for kode, label in kategori_pilihan %}
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" name="kategori" value="{{ kode }}"
-                           {% if kode in kategori_dipilih %}checked{% endif %}
-                           onchange="this.form.submit()"
-                           class="w-4 h-4 rounded border-slate-300 accent-primary">
+                        {% if kode in kategori_dipilih %}checked{% endif %}
+                        onchange="this.form.submit()"
+                        class="w-4 h-4 rounded border-slate-300 accent-primary">
                     {{ label }}
                 </label>
                 {% endfor %}
@@ -90,7 +90,7 @@
             </select>
         </div>
 
-        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
             {% for paket in page_obj %}
                 {% include "customer/_paket_card.html" %}
             {% empty %}
@@ -105,7 +105,7 @@
         <nav class="flex items-center justify-center gap-2 mt-10 text-sm font-medium">
             {% if page_obj.has_previous %}
             <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}"
-               class="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center hover:text-primary">&lsaquo;</a>
+            class="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center hover:text-primary">&lsaquo;</a>
             {% endif %}
 
             {% for n in page_obj.paginator.page_range %}
@@ -113,13 +113,13 @@
                 <span class="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center">{{ n }}</span>
                 {% else %}
                 <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ n }}"
-                   class="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center hover:text-primary">{{ n }}</a>
+                class="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center hover:text-primary">{{ n }}</a>
                 {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
             <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}"
-               class="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center hover:text-primary">&rsaquo;</a>
+            class="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center hover:text-primary">&rsaquo;</a>
             {% endif %}
         </nav>
         {% endif %}
