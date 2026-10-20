@@ -1,3 +1,5 @@
+import re
+from django.contrib.auth.forms import UserCreationForm, SetPasswordForm
 from django.utils import timezone
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
@@ -189,3 +191,68 @@ def get_peserta_formset(jumlah_form_kosong):
             }),
         }
     )
+
+# =========================================================
+# PROFIL
+# =========================================================
+GAYA_INPUT_PROFIL = ('w-full bg-white border border-slate-200 rounded-full px-4 py-2 text-sm '
+                     'outline-none focus:border-primary focus:ring-2 focus:ring-primary/20')
+
+MAKS_FOTO_BYTE = 2 * 1024 * 1024          # 2 MB
+FORMAT_FOTO_BOLEH = ('JPEG', 'PNG', 'WEBP')
+
+
+class ProfilForm(forms.ModelForm):
+    nama_lengkap = forms.CharField(max_length=150, label="Nama lengkap")
+
+    class Meta:
+        model = User
+        fields = ['no_hp']
+        labels = {'no_hp': 'No. HP'}
+
+    field_order = ['nama_lengkap', 'no_hp']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['nama_lengkap'].initial = self.instance.first_name
+        self.fields['no_hp'].required = True
+        for field in self.fields.values():
+            field.widget.attrs['class'] = GAYA_INPUT_PROFIL
+
+    def clean_no_hp(self):
+        no_hp = self.cleaned_data['no_hp'].strip()
+        if not re.fullmatch(r'\+?[0-9\s\-]{8,20}', no_hp):
+            raise forms.ValidationError("Nomor HP tidak valid (8-20 digit, boleh diawali +).")
+        return no_hp
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.first_name = self.cleaned_data['nama_lengkap']
+        if commit:
+            user.save()
+        return user
+
+
+class FotoProfilForm(forms.Form):
+    foto = forms.ImageField(error_messages={
+        'required': "Pilih foto terlebih dahulu.",
+        'invalid_image': "File yang dipilih bukan gambar yang valid.",
+    })
+
+    def clean_foto(self):
+        foto = self.cleaned_data['foto']
+        if foto.size > MAKS_FOTO_BYTE:
+            raise forms.ValidationError("Ukuran foto maksimal 2 MB.")
+        if foto.image.format not in FORMAT_FOTO_BOLEH:
+            raise forms.ValidationError("Format foto harus JPG, PNG, atau WEBP.")
+        return foto
+
+
+class UbahPasswordForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['new_password1'].label = "Password baru"
+        self.fields['new_password2'].label = "Konfirmasi password baru"
+        self.fields['new_password1'].help_text = ""
+        for field in self.fields.values():
+            field.widget.attrs['class'] = GAYA_INPUT_PROFIL

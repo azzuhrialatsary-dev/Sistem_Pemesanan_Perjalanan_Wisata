@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate
+from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
@@ -18,7 +18,10 @@ from django.db.models import Count, Max, Q
 from django.utils.dateparse import parse_date
 
 from .models import User, Paket, Jadwal, Booking, TripPost, TripJoinRequest
-from .forms import RegisterForm, BookingForm, TripPostForm, PesertaFormSet, get_peserta_formset
+from .forms import (
+    RegisterForm, BookingForm, TripPostForm, PesertaFormSet, get_peserta_formset,
+    ProfilForm, FotoProfilForm, UbahPasswordForm,
+)
 # =========================================================
 # HALAMAN UMUM (TIDAK BUTUH LOGIN)
 # =========================================================
@@ -520,3 +523,62 @@ def respon_permintaan_trip(request, req_id, aksi):
         messages.success(request, f"Permintaan dari {nama} ditolak.")
 
     return redirect(_url_tab('permintaan'))
+
+# =========================================================
+# PROFIL (BUTUH LOGIN)
+# =========================================================
+
+@login_required
+def profil(request):
+    """
+    Halaman Profil Saya. Tiga form di satu halaman, dibedakan dari field
+    tersembunyi 'aksi': 'data' (nama & no. HP), 'foto', dan 'password'.
+    """
+    user = request.user
+    aksi = request.POST.get('aksi') if request.method == 'POST' else None
+
+    # form dibuat dari salinan data di database supaya input yang salah
+    # tidak ikut mengubah nama yang tampil di bagian atas halaman
+    form_data = ProfilForm(instance=User.objects.get(pk=user.pk))
+    form_password = UbahPasswordForm(user)
+
+    if aksi == 'data':
+        form_data = ProfilForm(request.POST, instance=User.objects.get(pk=user.pk))
+        if form_data.is_valid():
+            form_data.save()
+            messages.success(request, "Data diri berhasil disimpan.")
+            return redirect('profil')
+
+    elif aksi == 'foto':
+        form_foto = FotoProfilForm(request.POST, request.FILES)
+        if form_foto.is_valid():
+            if user.foto:
+                user.foto.delete(save=False)      # hapus foto lama dari penyimpanan
+            user.foto = form_foto.cleaned_data['foto']
+            user.save(update_fields=['foto'])
+            messages.success(request, "Foto profil berhasil diganti.")
+        else:
+            messages.error(request, " ".join(form_foto.errors['foto']))
+        return redirect('profil')
+
+    elif aksi == 'password':
+        form_password = UbahPasswordForm(user, request.POST)
+        if form_password.is_valid():
+            form_password.save()
+            update_session_auth_hash(request, user)   # tetap login setelah ganti password
+            messages.success(request, "Password berhasil diubah.")
+            return redirect('profil')
+
+    pesanan = Booking.objects.filter(user=user).exclude(status='cancelled')
+    statistik = {
+        'pesanan': pesanan.count(),
+        'trip_match': (TripJoinRequest.objects.filter(status='approved')
+                    .filter(Q(user=user) | Q(trip_post__user=user)).count()),
+        'destinasi': pesanan.values('jadwal__paket__destinasi').distinct().count(),
+    }
+
+    return render(request, 'customer/profil.html', {
+        'form_data': form_data,
+        'form_password': form_password,
+        'statistik': statistik,
+    })
