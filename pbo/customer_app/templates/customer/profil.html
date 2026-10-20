@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Profil Saya - TravelHub{% endblock %}
+
+{% block content %}
+
+{# ===== Header ===== #}
+<section class="bg-gradient-to-r from-ocean to-primary text-white">
+    <div class="max-w-6xl mx-auto px-4 py-12">
+        <h1 class="font-display font-bold text-4xl">Profil Saya</h1>
+    </div>
+</section>
+
+<div class="max-w-xl mx-auto px-4 py-10 space-y-6">
+
+    {# ===== Kartu identitas ===== #}
+    <div class="bg-white rounded-3xl shadow-soft p-6">
+        <div class="flex items-center gap-4">
+
+            {# lingkaran foto: diklik untuk mengganti foto #}
+            <label for="input-foto" title="Ganti foto"
+                   class="group relative w-16 h-16 rounded-full overflow-hidden shrink-0 cursor-pointer bg-gradient-to-br from-ocean to-primary text-white flex items-center justify-center font-display font-bold text-2xl">
+                {% if user.foto %}
+                    <img src="{{ user.foto.url }}" alt="Foto profil" class="w-full h-full object-cover">
+                {% else %}
+                    {{ user.first_name|default:user.username|first|upper }}
+                {% endif %}
+                <span class="absolute inset-0 bg-ocean/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                    <i data-lucide="camera" class="w-6 h-6"></i>
+                </span>
+            </label>
+
+            <div class="min-w-0">
+                <p class="font-display font-semibold text-lg text-ocean truncate">{{ user.first_name|default:user.username }}</p>
+                <p class="text-sm text-slate-500 truncate">{{ user.email }}</p>
+                <span class="inline-block bg-secondary text-primary text-xs font-semibold px-2.5 py-0.5 rounded-full mt-1">{{ user.get_role_display }}</span>
+                <p class="text-xs text-slate-400 mt-1">Klik foto untuk mengganti (maks 2MB)</p>
+            </div>
+        </div>
+
+        {# form tersembunyi untuk unggah foto (dipicu lingkaran di atas) #}
+        <form method="post" enctype="multipart/form-data" id="form-foto" class="hidden">
+            {% csrf_token %}
+            <input type="hidden" name="aksi" value="foto">
+            <input type="file" name="foto" id="input-foto" accept="image/jpeg,image/png,image/webp">
+        </form>
+
+        <div class="grid grid-cols-3 gap-3 mt-6">
+            <div class="bg-secondary/60 rounded-2xl py-3 text-center">
+                <p class="font-display font-bold text-xl text-primary">{{ statistik.pesanan }}</p>
+                <p class="text-xs text-slate-500">Pesanan</p>
+            </div>
+            <div class="bg-secondary/60 rounded-2xl py-3 text-center">
+                <p class="font-display font-bold text-xl text-primary">{{ statistik.trip_match }}</p>
+                <p class="text-xs text-slate-500">Trip Match</p>
+            </div>
+            <div class="bg-secondary/60 rounded-2xl py-3 text-center">
+                <p class="font-display font-bold text-xl text-primary">{{ statistik.destinasi }}</p>
+                <p class="text-xs text-slate-500">Destinasi</p>
+            </div>
+        </div>
+    </div>
+
+    {# ===== Data diri ===== #}
+    <form method="post" class="bg-white rounded-3xl shadow-soft p-6 text-sm">
+        {% csrf_token %}
+        <input type="hidden" name="aksi" value="data">
+        <h2 class="font-display font-semibold text-ocean mb-4">Data Diri</h2>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block font-medium mb-1.5">{{ form_data.nama_lengkap.label }}</label>
+                {{ form_data.nama_lengkap }}
+                {% for e in form_data.nama_lengkap.errors %}<p class="text-red-500 text-xs mt-1">{{ e }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="block font-medium mb-1.5">{{ form_data.no_hp.label }}</label>
+                {{ form_data.no_hp }}
+                {% for e in form_data.no_hp.errors %}<p class="text-red-500 text-xs mt-1">{{ e }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="block font-medium mb-1.5">Email</label>
+                <input type="email" value="{{ user.email }}" disabled
+                       class="w-full bg-slate-50 border border-slate-200 rounded-full px-4 py-2 text-sm text-slate-400 cursor-not-allowed">
+            </div>
+        </div>
+
+        <button type="submit"
+                class="mt-5 inline-flex items-center gap-2 bg-primary text-white font-semibold text-xs px-5 py-2.5 rounded-full hover:opacity-90">
+            <i data-lucide="save" class="w-4 h-4"></i> Simpan perubahan
+        </button>
+    </form>
+
+    {# ===== Ubah password ===== #}
+    <form method="post" class="bg-white rounded-3xl shadow-soft p-6 text-sm">
+        {% csrf_token %}
+        <input type="hidden" name="aksi" value="password">
+        <h2 class="font-display font-semibold text-ocean mb-4">Ubah Password</h2>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block font-medium mb-1.5">{{ form_password.new_password1.label }}</label>
+                {{ form_password.new_password1 }}
+                {% for e in form_password.new_password1.errors %}<p class="text-red-500 text-xs mt-1">{{ e }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="block font-medium mb-1.5">{{ form_password.new_password2.label }}</label>
+                {{ form_password.new_password2 }}
+                {% for e in form_password.new_password2.errors %}<p class="text-red-500 text-xs mt-1">{{ e }}</p>{% endfor %}
+            </div>
+        </div>
+
+        <button type="submit"
+                class="mt-5 inline-flex items-center gap-2 bg-accent text-white font-semibold text-xs px-5 py-2.5 rounded-full hover:opacity-90">
+            <i data-lucide="key-round" class="w-4 h-4"></i> Ubah password
+        </button>
+    </form>
+</div>
+
+<script>
+(function () {
+    // foto langsung terkirim begitu dipilih; cek ukuran dulu di browser
+    var input = document.getElementById('input-foto');
+    input.addEventListener('change', function () {
+        var file = input.files[0];
+        if (!file) { return; }
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Ukuran foto maksimal 2 MB.');
+            input.value = '';
+            return;
+        }
+        document.getElementById('form-foto').submit();
+    });
+})();
+</script>
+{% endblock %}
