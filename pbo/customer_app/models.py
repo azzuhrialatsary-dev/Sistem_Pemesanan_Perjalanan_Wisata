@@ -62,6 +62,7 @@ class User(AbstractUser):
     no_hp = models.CharField(max_length=20, blank=True)
     umur = models.PositiveSmallIntegerField(null=True, blank=True)
     kota = models.CharField(max_length=80, blank=True)
+    foto = models.ImageField(upload_to='profil/', blank=True, null=True)
 
     def is_admin_role(self):
         return self.role == 'admin'

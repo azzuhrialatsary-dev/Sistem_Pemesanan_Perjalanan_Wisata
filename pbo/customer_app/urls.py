@@ -21,6 +21,7 @@ urlpatterns = [
     path('booking/<int:booking_id>/bayar/', views.payment, name='payment'),
     path('booking/<int:booking_id>/tiket/', views.lihat_tiket, name='lihat_tiket'),
     path('riwayat/', views.riwayat_booking, name='riwayat_booking'),
+    path('profil/', views.profil, name='profil'),
 
     # Trip Matchmaker
     path('trip-matchmaker/', views.daftar_trip_matchmaker, name='daftar_trip_matchmaker'),
