@@ -524,6 +524,24 @@ def respon_permintaan_trip(request, req_id, aksi):
 
     return redirect(_url_tab('permintaan'))
 
+
+# =========================================================
+# CHATBOT
+# =========================================================
+import json as _json
+from . import chatbot as _chatbot
+
+
+@require_POST
+def chatbot_api(request):
+    try:
+        data = _json.loads(request.body.decode('utf-8'))
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({'reply': 'Permintaan tidak valid.'}, status=400)
+    riwayat = data.get('messages', [])
+    if not isinstance(riwayat, list) or not riwayat:
+        return JsonResponse({'reply': 'Pesan kosong.'}, status=400)
+    return JsonResponse({'reply': _chatbot.balas(riwayat)})
 # =========================================================
 # PROFIL (BUTUH LOGIN)
 # =========================================================

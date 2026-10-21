@@ -2,3 +2,5 @@ Django
 openpyxl 
 reportlab 
 pillow
+qrcode
+google-generativeai
