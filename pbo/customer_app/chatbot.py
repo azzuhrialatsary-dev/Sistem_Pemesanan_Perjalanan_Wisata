@@ -12,7 +12,7 @@ import google.generativeai as genai
 from django.utils import timezone
 from .models import Paket
 
-MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.8-flash')
+MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.5-flash-lite')
 WA_ADMIN = '+62 812 0000 0000'
 
 GREETING = ("Halo! Selamat datang di TravelHub. Ada yang bisa saya bantu "
