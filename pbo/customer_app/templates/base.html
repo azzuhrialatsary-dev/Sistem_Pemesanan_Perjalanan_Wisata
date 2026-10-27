@@ -1,14 +1,19 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}TravelHub{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml"
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230e8388'/%3E%3Ccircle cx='50' cy='50' r='26' fill='none' stroke='white' stroke-width='4'/%3E%3Cpolygon points='50,28 63,47 50,72 37,53' fill='white'/%3E%3Cpolygon points='50,45 63,47 50,72 45,51' fill='%230e8388' opacity='0.25'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@0.453.0"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700;800&display=swap"
+        rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -33,6 +38,7 @@
         }
     </script>
 </head>
+
 <body class="font-sans bg-surface text-slate-800">
 
     {% url 'home' as home_url %}
@@ -51,57 +57,72 @@
             </a>
 
             <div class="hidden md:flex items-center gap-1 text-sm font-medium">
-                <a href="{{ home_url }}" class="px-4 py-2 rounded-full {% if request.path == home_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Beranda</a>
-                <a href="{{ paket_url }}" class="px-4 py-2 rounded-full {% if request.path == paket_url or '/paket/' in request.path %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Paket Wisata</a>
-                <a href="{{ trip_url }}" class="px-4 py-2 rounded-full {% if request.path == trip_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Trip Matchmaker</a>
-                <a href="{{ riwayat_url }}" class="px-4 py-2 rounded-full {% if request.path == riwayat_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Pesanan Saya</a>
+                <a href="{{ home_url }}"
+                    class="px-4 py-2 rounded-full {% if request.path == home_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Beranda</a>
+                <a href="{{ paket_url }}"
+                    class="px-4 py-2 rounded-full {% if request.path == paket_url or '/paket/' in request.path %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Paket
+                    Wisata</a>
+                <a href="{{ trip_url }}"
+                    class="px-4 py-2 rounded-full {% if request.path == trip_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Trip
+                    Matchmaker</a>
+                <a href="{{ riwayat_url }}"
+                    class="px-4 py-2 rounded-full {% if request.path == riwayat_url %}bg-secondary text-primary{% else %}text-slate-600 hover:text-primary{% endif %}">Pesanan
+                    Saya</a>
             </div>
 
             {% if user.is_authenticated %}
-                <div class="hidden md:flex items-center gap-4 text-sm font-medium">
-                    <a href="{% url 'profil' %}" class="flex items-center gap-1.5 text-slate-700 hover:text-primary">
-                        {% if user.foto %}
-                        <img src="{{ user.foto.url }}" alt="" class="w-6 h-6 rounded-full object-cover">
-                        {% else %}
-                        <i data-lucide="user" class="w-4 h-4"></i>
-                        {% endif %}
-                        <span class="hidden sm:inline">Profil</span>
-                    </a>
-                    {% if user.is_superuser or user.role == 'admin' %}
-                    <a href="{% url 'panel_dashboard' %}" class="flex items-center gap-1.5 text-primary hover:underline"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span class="hidden sm:inline">Panel Admin</span></a>
+            <div class="hidden md:flex items-center gap-4 text-sm font-medium">
+                <a href="{% url 'profil' %}" class="flex items-center gap-1.5 text-slate-700 hover:text-primary">
+                    {% if user.foto %}
+                    <img src="{{ user.foto.url }}" alt="" class="w-6 h-6 rounded-full object-cover">
+                    {% else %}
+                    <i data-lucide="user" class="w-4 h-4"></i>
                     {% endif %}
-                    <a href="{% url 'logout' %}" title="Keluar" class="text-slate-700 hover:text-primary">
-                        <i data-lucide="log-out" class="w-5 h-5"></i>
-                    </a>
-                </div>
+                    <span class="hidden sm:inline">Profil</span>
+                </a>
+                {% if user.is_superuser or user.role == 'admin' %}
+                <a href="{% url 'panel_dashboard' %}" class="flex items-center gap-1.5 text-primary hover:underline"><i
+                        data-lucide="layout-dashboard" class="w-4 h-4"></i><span class="hidden sm:inline">Panel
+                        Admin</span></a>
+                {% endif %}
+                <a href="{% url 'logout' %}" title="Keluar" class="text-slate-700 hover:text-primary">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </a>
+            </div>
             {% else %}
-                <div class="hidden md:flex items-center gap-3 text-sm font-medium">
-                    <a href="{% url 'login' %}" class="text-slate-800 hover:text-primary">Masuk</a>
-                    <a href="{% url 'register' %}"
+            <div class="hidden md:flex items-center gap-3 text-sm font-medium">
+                <a href="{% url 'login' %}" class="text-slate-800 hover:text-primary">Masuk</a>
+                <a href="{% url 'register' %}"
                     class="bg-accent text-white px-5 py-2 rounded-full hover:opacity-90">Daftar</a>
-                </div>
+            </div>
             {% endif %}
             <button type="button" id="btn-menu" aria-label="Menu" aria-expanded="false"
-                    class="md:hidden p-2 -mr-2 text-slate-800">
+                class="md:hidden p-2 -mr-2 text-slate-800">
                 <i data-lucide="menu" class="w-6 h-6 ikon-buka"></i>
                 <i data-lucide="x" class="w-6 h-6 ikon-tutup hidden"></i>
             </button>
         </div>
-        <div id="menu-mobile" class="hidden md:hidden absolute top-full inset-x-0 bg-surface border-b border-slate-200 shadow-soft">
+        <div id="menu-mobile"
+            class="hidden md:hidden absolute top-full inset-x-0 bg-surface border-b border-slate-200 shadow-soft">
             <div class="px-5 py-2 flex flex-col text-base font-medium text-slate-800">
-                <a href="{{ home_url }}" class="py-3.5 {% if request.path == home_url %}text-primary{% endif %}">Beranda</a>
-                <a href="{{ paket_url }}" class="py-3.5 {% if request.path == paket_url or '/paket/' in request.path %}text-primary{% endif %}">Paket Wisata</a>
-                <a href="{{ trip_url }}" class="py-3.5 {% if request.path == trip_url %}text-primary{% endif %}">Trip Matchmaker</a>
-                <a href="{{ riwayat_url }}" class="py-3.5 {% if request.path == riwayat_url %}text-primary{% endif %}">Pesanan Saya</a>
+                <a href="{{ home_url }}"
+                    class="py-3.5 {% if request.path == home_url %}text-primary{% endif %}">Beranda</a>
+                <a href="{{ paket_url }}"
+                    class="py-3.5 {% if request.path == paket_url or '/paket/' in request.path %}text-primary{% endif %}">Paket
+                    Wisata</a>
+                <a href="{{ trip_url }}" class="py-3.5 {% if request.path == trip_url %}text-primary{% endif %}">Trip
+                    Matchmaker</a>
+                <a href="{{ riwayat_url }}"
+                    class="py-3.5 {% if request.path == riwayat_url %}text-primary{% endif %}">Pesanan Saya</a>
                 {% if user.is_authenticated %}
-                    <a href="{% url 'profil' %}" class="py-3.5">Profil</a>
-                    {% if user.is_superuser or user.role == 'admin' %}
-                    <a href="{% url 'panel_dashboard' %}" class="py-3.5 text-primary">Panel Admin</a>
-                    {% endif %}
-                    <a href="{% url 'logout' %}" class="py-3.5 text-red-500">Keluar</a>
+                <a href="{% url 'profil' %}" class="py-3.5">Profil</a>
+                {% if user.is_superuser or user.role == 'admin' %}
+                <a href="{% url 'panel_dashboard' %}" class="py-3.5 text-primary">Panel Admin</a>
+                {% endif %}
+                <a href="{% url 'logout' %}" class="py-3.5 text-red-500">Keluar</a>
                 {% else %}
-                    <a href="{% url 'login' %}" class="py-3.5">Masuk</a>
-                    <a href="{% url 'register' %}" class="py-3.5 text-accent">Daftar</a>
+                <a href="{% url 'login' %}" class="py-3.5">Masuk</a>
+                <a href="{% url 'register' %}" class="py-3.5 text-accent">Daftar</a>
                 {% endif %}
             </div>
         </div>
@@ -146,8 +167,8 @@
             <div>
                 <p class="font-semibold text-sm mb-3">Kontak</p>
                 <ul class="space-y-2 text-sm text-slate-300">
-                    <li>halo@travelhub.id</li>
-                    <li>+62 812 0000 0000</li>
+                    <li>admintravelhub@gmail.com</li>
+                    <li>+62 812 5309 8057</li>
                 </ul>
             </div>
         </div>
@@ -160,18 +181,19 @@
     {% include "_chatbot.html" %}
 
     <script>
-    lucide.createIcons();
+        lucide.createIcons();
 
-    var btnMenu = document.getElementById('btn-menu');
-    var menuMobile = document.getElementById('menu-mobile');
-    if (btnMenu && menuMobile) {
-        btnMenu.addEventListener('click', function () {
-            var terbuka = menuMobile.classList.toggle('hidden') === false;
-            btnMenu.setAttribute('aria-expanded', terbuka);
-            btnMenu.querySelector('.ikon-buka').classList.toggle('hidden', terbuka);
-            btnMenu.querySelector('.ikon-tutup').classList.toggle('hidden', !terbuka);
-        });
-    }
+        var btnMenu = document.getElementById('btn-menu');
+        var menuMobile = document.getElementById('menu-mobile');
+        if (btnMenu && menuMobile) {
+            btnMenu.addEventListener('click', function () {
+                var terbuka = menuMobile.classList.toggle('hidden') === false;
+                btnMenu.setAttribute('aria-expanded', terbuka);
+                btnMenu.querySelector('.ikon-buka').classList.toggle('hidden', terbuka);
+                btnMenu.querySelector('.ikon-tutup').classList.toggle('hidden', !terbuka);
+            });
+        }
     </script>
 </body>
+
 </html>

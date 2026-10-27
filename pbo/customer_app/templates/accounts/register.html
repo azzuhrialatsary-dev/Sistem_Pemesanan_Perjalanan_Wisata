@@ -65,4 +65,37 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+
+    // Temukan semua input password di form register dan tambahkan toggle visibility
+    document.querySelectorAll('input[type="password"]').forEach(function(pwInput, index) {
+        var wrapper = pwInput.parentElement;
+        wrapper.style.position = 'relative';
+
+        // Tambahkan padding-right agar teks tidak tertutup ikon
+        pwInput.style.paddingRight = '2.75rem';
+
+        var toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors';
+        toggleBtn.setAttribute('aria-label', 'Tampilkan password');
+        toggleBtn.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ikon-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ikon-eye-off" style="display:none"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>';
+
+        wrapper.appendChild(toggleBtn);
+
+        toggleBtn.addEventListener('click', function() {
+            var isPassword = pwInput.type === 'password';
+            pwInput.type = isPassword ? 'text' : 'password';
+            toggleBtn.querySelector('.ikon-eye').style.display = isPassword ? 'none' : 'block';
+            toggleBtn.querySelector('.ikon-eye-off').style.display = isPassword ? 'block' : 'none';
+            toggleBtn.setAttribute('aria-label', isPassword ? 'Sembunyikan password' : 'Tampilkan password');
+        });
+    });
+});
+</script>
 {% endblock %}
