@@ -34,20 +34,20 @@
             <p class="text-slate-500 mb-8">Senang melihatmu lagi!</p>
 
             {% if messages %}
-                {% for message in messages %}
-                <div class="rounded-xl px-4 py-3 text-sm mb-4
+            {% for message in messages %}
+            <div class="rounded-xl px-4 py-3 text-sm mb-4
                     {% if message.tags == 'error' %}bg-red-50 text-red-600
                     {% elif message.tags == 'success' %}bg-emerald-50 text-emerald-600
                     {% else %}bg-blue-50 text-blue-600{% endif %}">
-                    {{ message }}
-                </div>
-                {% endfor %}
+                {{ message }}
+            </div>
+            {% endfor %}
             {% endif %}
 
             <form method="POST">
                 {% csrf_token %}
                 <div class="mb-5">
-                    <label class="block text-sm font-medium mb-1.5">Email</label>
+                    <label class="block text-sm font-medium mb-1.5">Email/Username</label>
                     <input type="text" name="username" required autofocus
                         class="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
                 </div>
@@ -65,7 +65,7 @@
                     </div>
                 </div>
                 <button type="submit"
-                        class="w-full bg-accent text-white py-3 rounded-full font-medium shadow-soft hover:opacity-90">
+                    class="w-full bg-accent text-white py-3 rounded-full font-medium shadow-soft hover:opacity-90">
                     Masuk
                 </button>
             </form>
@@ -79,20 +79,20 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    lucide.createIcons();
+    document.addEventListener('DOMContentLoaded', function () {
+        lucide.createIcons();
 
-    var toggleBtn = document.getElementById('toggle-pw');
-    var pwInput = document.getElementById('id_password');
-    if (toggleBtn && pwInput) {
-        toggleBtn.addEventListener('click', function() {
-            var isPassword = pwInput.type === 'password';
-            pwInput.type = isPassword ? 'text' : 'password';
-            toggleBtn.querySelector('.ikon-eye').classList.toggle('hidden', isPassword);
-            toggleBtn.querySelector('.ikon-eye-off').classList.toggle('hidden', !isPassword);
-            toggleBtn.setAttribute('aria-label', isPassword ? 'Sembunyikan password' : 'Tampilkan password');
-        });
-    }
-});
+        var toggleBtn = document.getElementById('toggle-pw');
+        var pwInput = document.getElementById('id_password');
+        if (toggleBtn && pwInput) {
+            toggleBtn.addEventListener('click', function () {
+                var isPassword = pwInput.type === 'password';
+                pwInput.type = isPassword ? 'text' : 'password';
+                toggleBtn.querySelector('.ikon-eye').classList.toggle('hidden', isPassword);
+                toggleBtn.querySelector('.ikon-eye-off').classList.toggle('hidden', !isPassword);
+                toggleBtn.setAttribute('aria-label', isPassword ? 'Sembunyikan password' : 'Tampilkan password');
+            });
+        }
+    });
 </script>
 {% endblock %}
